@@ -1,380 +1,58 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Congelados e Cia - Gestão</title>
-    <style>
-        :root {
-            --primary: #ea580c;
-            --primary-dark: #c2410c;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-color: #1e293b;
-            --border-color: #e2e8f0;
-        }
+const API_URL = "https://congelados-api.onrender.com";
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo-img {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid var(--primary);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
-        }
-
-        header h1 {
-            color: var(--primary-dark);
-            margin: 5px 0;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border-color);
-        }
-
-        h2 {
-            font-size: 1.25rem;
-            margin-top: 0;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 8px;
-            color: #334155;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        input, select {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-            background-color: #fff;
-        }
-
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: var(--primary-dark);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th {
-            background-color: #f1f5f9;
-            font-weight: 600;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <header>
-            <img src="fotos/logo.jpg" alt="Logo Congelados e Cia" class="logo-img">
-            <h1>Congelados & Cia</h1>
-            <p>Seu dia a dia mais prático e delicioso</p>
-        </header>
-
-        <!-- CADASTRO DE PRODUTOS -->
-        <div class="card">
-            <h2>Cadastrar Novo Produto</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Nome do Produto</label>
-                    <input type="text" id="prodNome" placeholder="Ex: Coxinha">
-                </div>
-                <div class="form-group">
-                    <label>Preço (R$)</label>
-                    <input type="number" step="0.01" id="prodPreco" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label>Estoque Inicial</label>
-                    <input type="number" id="prodEstoque" placeholder="0">
-                </div>
-            </div>
-            <button onclick="cadastrarProduto()">Salvar Produto</button>
-        </div>
-
-        <!-- CADASTRO DE CLIENTES -->
-        <div class="card">
-            <h2>Cadastrar Novo Cliente</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Nome do Cliente</label>
-                    <input type="text" id="cliNome" placeholder="Ex: Maria Silva">
-                </div>
-                <div class="form-group">
-                    <label>Telefone</label>
-                    <input type="text" id="cliTelefone" placeholder="(35) 99999-9999">
-                </div>
-            </div>
-            <button onclick="cadastrarCliente()">Salvar Cliente</button>
-        </div>
-
-        <!-- NOVO PEDIDO -->
-        <div class="card">
-            <h2>Registrar Pedido</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Selecionar Cliente</label>
-                    <select id="pedidoCliente">
-                        <option value="">Carregando clientes...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Selecionar Produto</label>
-                    <select id="pedidoProduto">
-                        <option value="">Carregando produtos...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Quantidade</label>
-                    <input type="number" id="pedidoQtd" value="1" min="1">
-                </div>
-            </div>
-            <button onclick="criarPedido()" style="background-color: #16a34a;">Finalizar Pedido e Baixar Estoque</button>
-        </div>
-
-        <!-- LISTAGENS -->
-        <div class="card">
-            <h2>Produtos em Estoque</h2>
-            <button onclick="carregarDados()" style="margin-bottom: 10px; background-color: #0ea5e9;">Atualizar Dados</button>
-            <table>
-                <thead>
-                    <tr><th>ID</th><th>Nome</th><th>Preço (R$)</th><th>Estoque</th></tr>
-                </thead>
-                <tbody id="tabelaProdutos"></tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <h2>Clientes Cadastrados</h2>
-            <table>
-                <thead>
-                    <tr><th>ID</th><th>Nome</th><th>Telefone</th></tr>
-                </thead>
-                <tbody id="tabelaClientes"></tbody>
-            </table>
-        </div>
-
-        <!-- RELATÓRIOS -->
-        <div class="card">
-            <h2>Relatório: Produtos Mais Vendidos (Em Reais)</h2>
-            <table>
-                <thead>
-                    <tr><th>Produto</th><th>Qtd Vendida</th><th>Total em Reais</th></tr>
-                </thead>
-                <tbody id="tabelaMaisVendidos"></tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <h2>Relatório: Clientes Mais Fiéis</h2>
-            <table>
-                <thead>
-                    <tr><th>Cliente</th><th>Total de Pedidos</th></tr>
-                </thead>
-                <tbody id="tabelaClientesFieis"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        const API_URL = "https://congelados-api.onrender.com";
-
-        async function cadastrarProduto() {
-            const nome = document.getElementById('prodNome').value;
-            const preco = parseFloat(document.getElementById('prodPreco').value);
-            const estoque = parseInt(document.getElementById('prodEstoque').value);
-
-            if (!nome || isNaN(preco) || isNaN(estoque)) {
-                alert("Preencha todos os campos do produto corretamente.");
-                return;
-            }
-
-            const response = await fetch(`${API_URL}/produtos/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, preco, estoque })
+// --- FUNÇÃO DE EXCLUIR PRODUTO ---
+async function deletarProduto(id) {
+    if (confirm("Deseja realmente excluir este produto?")) {
+        try {
+            const resposta = await fetch(`${API_URL}/produtos/${id}`, {
+                method: 'DELETE'
             });
-
-            if (response.ok) {
-                alert("Produto cadastrado!");
-                document.getElementById('prodNome').value = '';
-                document.getElementById('prodPreco').value = '';
-                document.getElementById('prodEstoque').value = '';
-                carregarDados();
+            if (resposta.ok) {
+                alert("Produto excluído com sucesso!");
+                carregarProdutos(); // Recarrega a tabela de produtos na tela
             } else {
-                alert("Erro ao cadastrar produto.");
+                alert("Erro ao excluir o produto.");
             }
+        } catch (error) {
+            console.error("Erro de conexão:", error);
         }
+    }
+}
 
-        async function cadastrarCliente() {
-            const nome = document.getElementById('cliNome').value;
-            const telefone = document.getElementById('cliTelefone').value;
-
-            if (!nome) {
-                alert("Preencha o nome do cliente.");
-                return;
-            }
-
-            const response = await fetch(`${API_URL}/clientes/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, telefone })
+// --- FUNÇÃO DE EXCLUIR CLIENTE ---
+async function deletarCliente(id) {
+    if (confirm("Deseja realmente excluir este cliente?")) {
+        try {
+            const resposta = await fetch(`${API_URL}/clientes/${id}`, {
+                method: 'DELETE'
             });
-
-            if (response.ok) {
-                alert("Cliente cadastrado!");
-                document.getElementById('cliNome').value = '';
-                document.getElementById('cliTelefone').value = '';
-                carregarDados();
+            if (resposta.ok) {
+                alert("Cliente excluído com sucesso!");
+                carregarClientes(); // Recarrega a tabela de clientes na tela
             } else {
-                alert("Erro ao cadastrar cliente.");
+                alert("Erro ao excluir o cliente.");
             }
+        } catch (error) {
+            console.error("Erro de conexão:", error);
         }
+    }
+}
 
-        async function criarPedido() {
-            const cliente_id = parseInt(document.getElementById('pedidoCliente').value);
-            const produto_id = parseInt(document.getElementById('pedidoProduto').value);
-            const quantidade = parseInt(document.getElementById('pedidoQtd').value);
-
-            if (!cliente_id || !produto_id || isNaN(quantidade)) {
-                alert("Selecione um cliente, um produto e informe a quantidade.");
-                return;
-            }
-
-            const dadosPedido = {
-                cliente_id: cliente_id,
-                itens: [{ produto_id: produto_id, quantidade: quantidade }]
-            };
-
-            const response = await fetch(`${API_URL}/pedidos/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dadosPedido)
+// --- FUNÇÃO DE EXCLUIR VENDA ---
+async function deletarVenda(id) {
+    if (confirm("Deseja realmente excluir este registro de venda?")) {
+        try {
+            const resposta = await fetch(`${API_URL}/vendas/${id}`, {
+                method: 'DELETE'
             });
-
-            if (response.ok) {
-                alert("Pedido realizado com sucesso e estoque atualizado!");
-                carregarDados();
+            if (resposta.ok) {
+                alert("Venda excluída com sucesso!");
+                carregarVendas(); // Recarrega a tabela de vendas na tela
             } else {
-                const erro = await response.json();
-                alert("Erro ao realizar pedido: " + (erro.detail || "Verifique o estoque"));
+                alert("Erro ao excluir a venda.");
             }
+        } catch (error) {
+            console.error("Erro de conexão:", error);
         }
-
-        async function carregarDados() {
-            try {
-                // Produtos
-                const resProd = await fetch(`${API_URL}/produtos/`);
-                const produtos = await resProd.json();
-                const tabProd = document.getElementById('tabelaProdutos');
-                const selectProd = document.getElementById('pedidoProduto');
-                tabProd.innerHTML = '';
-                selectProd.innerHTML = '<option value="">Selecione um produto</option>';
-                
-                produtos.forEach(p => {
-                    tabProd.innerHTML += `<tr><td>${p.id}</td><td>${p.nome}</td><td>R$ ${parseFloat(p.preco).toFixed(2)}</td><td>${p.estoque}</td></tr>`;
-                    selectProd.innerHTML += `<option value="${p.id}">${p.nome} (Estoque: ${p.estoque})</option>`;
-                });
-
-                // Clientes
-                const resCli = await fetch(`${API_URL}/clientes/`);
-                const clientes = await resCli.json();
-                const tabCli = document.getElementById('tabelaClientes');
-                const selectCli = document.getElementById('pedidoCliente');
-                tabCli.innerHTML = '';
-                selectCli.innerHTML = '<option value="">Selecione um cliente</option>';
-
-                clientes.forEach(c => {
-                    tabCli.innerHTML += `<tr><td>${c.id}</td><td>${c.nome}</td><td>${c.telefone || '-'}</td></tr>`;
-                    selectCli.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-                });
-
-                // Relatório Produtos Mais Vendidos
-                const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
-                const maisVendidos = await resMais.json();
-                const tabMais = document.getElementById('tabelaMaisVendidos');
-                tabMais.innerHTML = '';
-                maisVendidos.forEach(m => {
-                    tabMais.innerHTML += `<tr><td>${m.produto}</td><td>${m.quantidade_vendida}</td><td>R$ ${m.total_em_reais.toFixed(2)}</td></tr>`;
-                });
-
-                // Relatório Clientes Fiéis
-                const resFieis = await fetch(`${API_URL}/relatorios/clientes-fieis`);
-                const fieis = await resFieis.json();
-                const tabFieis = document.getElementById('tabelaClientesFieis');
-                tabFieis.innerHTML = '';
-                fieis.forEach(f => {
-                    tabFieis.innerHTML += `<tr><td>${f.cliente}</td><td>${f.total_pedidos}</td></tr>`;
-                });
-
-            } catch (error) {
-                console.error("Erro ao carregar dados:", error);
-            }
-        }
-
-        // Carregar tudo ao abrir a página
-        carregarDados();
-    </script>
-</body>
-</html>
+    }
+}
