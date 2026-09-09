@@ -1,58 +1,270 @@
-const API_URL = "https://congelados-api.onrender.com";
-
-// --- FUNÇÃO DE EXCLUIR PRODUTO ---
-async function deletarProduto(id) {
-    if (confirm("Deseja realmente excluir este produto?")) {
-        try {
-            const resposta = await fetch(`${API_URL}/produtos/${id}`, {
-                method: 'DELETE'
-            });
-            if (resposta.ok) {
-                alert("Produto excluído com sucesso!");
-                carregarProdutos(); // Recarrega a tabela de produtos na tela
-            } else {
-                alert("Erro ao excluir o produto.");
-            }
-        } catch (error) {
-            console.error("Erro de conexão:", error);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Congelados e Cia - Gestão</title>
+    
+    <style>
+        /* --- ESTILOS GERAIS E RESPONSIVOS --- */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f4f6f9;
+            color: #333;
         }
-    }
-}
 
-// --- FUNÇÃO DE EXCLUIR CLIENTE ---
-async function deletarCliente(id) {
-    if (confirm("Deseja realmente excluir este cliente?")) {
-        try {
-            const resposta = await fetch(`${API_URL}/clientes/${id}`, {
-                method: 'DELETE'
-            });
-            if (resposta.ok) {
-                alert("Cliente excluído com sucesso!");
-                carregarClientes(); // Recarrega a tabela de clientes na tela
-            } else {
-                alert("Erro ao excluir o cliente.");
-            }
-        } catch (error) {
-            console.error("Erro de conexão:", error);
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
         }
-    }
-}
 
-// --- FUNÇÃO DE EXCLUIR VENDA ---
-async function deletarVenda(id) {
-    if (confirm("Deseja realmente excluir este registro de venda?")) {
-        try {
-            const resposta = await fetch(`${API_URL}/vendas/${id}`, {
-                method: 'DELETE'
-            });
-            if (resposta.ok) {
-                alert("Venda excluída com sucesso!");
-                carregarVendas(); // Recarrega a tabela de vendas na tela
-            } else {
-                alert("Erro ao excluir a venda.");
-            }
-        } catch (error) {
-            console.error("Erro de conexão:", error);
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
         }
-    }
-}
+
+        /* Container dos blocos (formulários e tabelas) */
+        .container, form, .table-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        /* Botão de excluir padrão */
+        .btn-excluir {
+            background-color: #dc3545;
+            padding: 6px 12px;
+            width: auto;
+            font-size: 0.9rem;
+        }
+        .btn-excluir:hover {
+            background-color: #c82333;
+        }
+
+        /* Tabela responsiva (com rolagem lateral automática no celular) */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 450px; /* Garante espaço mínimo para não amassar as colunas */
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        /* Ajustes específicos para telas de celular menores */
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container, form, .table-container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            th, td {
+                padding: 8px 6px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>❄️ Congelados e Cia - Sistema de Gestão</h1>
+
+    <!-- Seção de Produtos -->
+    <div class="container">
+        <h2>Produtos</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Preço</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-produtos">
+                    <!-- Os produtos serão carregados aqui via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Seção de Clientes -->
+    <div class="container">
+        <h2>Clientes</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-clientes">
+                    <!-- Os clientes serão carregados aqui via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Seção de Vendas -->
+    <div class="container">
+        <h2>Vendas</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Detalhes</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-vendas">
+                    <!-- As vendas serão carregadas aqui via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Script JavaScript integrando com a API do Render e as funções de exclusão -->
+    <script>
+        const API_URL = "https://congelados-api.onrender.com";
+
+        // --- CARREGAR DADOS AO ABRIR A PÁGINA ---
+        window.onload = function() {
+            carregarProdutos();
+            carregarClientes();
+            carregarVendas();
+        };
+
+        // --- FUNÇÕES DE CARREGAMENTO ---
+        async function carregarProdutos() {
+            try {
+                const res = await fetch(`${API_URL}/produtos`);
+                const produtos = await res.json();
+                const tbody = document.getElementById("tabela-produtos");
+                tbody.innerHTML = "";
+                produtos.forEach(p => {
+                    tbody.innerHTML += `<tr>
+                        <td>${p.id}</td>
+                        <td>${p.nome}</td>
+                        <td>R$ ${p.preco ? p.preco.toFixed(2) : '0.00'}</td>
+                        <td><button class="btn-excluir" onclick="deletarProduto(${p.id})">Excluir</button></td>
+                    </tr>`;
+                });
+            } catch (e) { console.error("Erro ao carregar produtos", e); }
+        }
+
+        async function carregarClientes() {
+            try {
+                const res = await fetch(`${API_URL}/clientes`);
+                const clientes = await res.json();
+                const tbody = document.getElementById("tabela-clientes");
+                tbody.innerHTML = "";
+                clientes.forEach(c => {
+                    tbody.innerHTML += `<tr>
+                        <td>${c.id}</td>
+                        <td>${c.nome}</td>
+                        <td>${c.telefone || '-'}</td>
+                        <td><button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button></td>
+                    </tr>`;
+                });
+            } catch (e) { console.error("Erro ao carregar clientes", e); }
+        }
+
+        async function carregarVendas() {
+            try {
+                const res = await fetch(`${API_URL}/vendas`);
+                const vendas = await res.json();
+                const tbody = document.getElementById("tabela-vendas");
+                tbody.innerHTML = "";
+                vendas.forEach(v => {
+                    tbody.innerHTML += `<tr>
+                        <td>${v.id}</td>
+                        <td>Venda #${v.id}</td>
+                        <td><button class="btn-excluir" onclick="deletarVenda(${v.id})">Excluir</button></td>
+                    </tr>`;
+                });
+            } catch (e) { console.error("Erro ao carregar vendas", e); }
+        }
+
+        // --- FUNÇÕES DE EXCLUIR PRODUTO, CLIENTE E VENDA ---
+        async function deletarProduto(id) {
+            if (confirm("Deseja realmente excluir este produto?")) {
+                const res = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+                if (res.ok) { alert("Produto excluído!"); carregarProdutos(); }
+                else { alert("Erro ao excluir."); }
+            }
+        }
+
+        async function deletarCliente(id) {
+            if (confirm("Deseja realmente excluir este cliente?")) {
+                const res = await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
+                if (res.ok) { alert("Cliente excluído!"); carregarClientes(); }
+                else { alert("Erro ao excluir."); }
+            }
+        }
+
+        async function deletarVenda(id) {
+            if (confirm("Deseja realmente excluir esta venda?")) {
+                const res = await fetch(`${API_URL}/vendas/${id}`, { method: 'DELETE' });
+                if (res.ok) { alert("Venda excluída!"); carregarVendas(); }
+                else { alert("Erro ao excluir."); }
+            }
+        }
+    </script>
+</body>
+</html>
