@@ -113,7 +113,6 @@
             background-color: var(--primary-dark);
         }
 
-        /* Botão de excluir estilizado */
         button.btn-excluir {
             background-color: var(--danger);
             padding: 6px 12px;
@@ -124,7 +123,6 @@
             background-color: var(--danger-hover);
         }
 
-        /* Tabela responsiva com rolagem lateral em telas pequenas */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -297,20 +295,24 @@
                 return;
             }
 
-            const response = await fetch(`${API_URL}/produtos/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, preco, estoque })
-            });
+            try {
+                const response = await fetch(`${API_URL}/produtos/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, preco, estoque })
+                });
 
-            if (response.ok) {
-                alert("Produto cadastrado!");
-                document.getElementById('prodNome').value = '';
-                document.getElementById('prodPreco').value = '';
-                document.getElementById('prodEstoque').value = '';
-                carregarDados();
-            } else {
-                alert("Erro ao cadastrar produto.");
+                if (response.ok) {
+                    alert("Produto cadastrado com sucesso!");
+                    document.getElementById('prodNome').value = '';
+                    document.getElementById('prodPreco').value = '';
+                    document.getElementById('prodEstoque').value = '';
+                    carregarDados();
+                } else {
+                    alert("Erro ao cadastrar produto.");
+                }
+            } catch (e) {
+                alert("Falha de conexão com a API.");
             }
         }
 
@@ -323,19 +325,23 @@
                 return;
             }
 
-            const response = await fetch(`${API_URL}/clientes/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, telefone })
-            });
+            try {
+                const response = await fetch(`${API_URL}/clientes/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, telefone })
+                });
 
-            if (response.ok) {
-                alert("Cliente cadastrado!");
-                document.getElementById('cliNome').value = '';
-                document.getElementById('cliTelefone').value = '';
-                carregarDados();
-            } else {
-                alert("Erro ao cadastrar cliente.");
+                if (response.ok) {
+                    alert("Cliente cadastrado com sucesso!");
+                    document.getElementById('cliNome').value = '';
+                    document.getElementById('cliTelefone').value = '';
+                    carregarDados();
+                } else {
+                    alert("Erro ao cadastrar cliente.");
+                }
+            } catch (e) {
+                alert("Falha de conexão com a API.");
             }
         }
 
@@ -354,42 +360,53 @@
                 itens: [{ produto_id: produto_id, quantidade: quantidade }]
             };
 
-            const response = await fetch(`${API_URL}/pedidos/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dadosPedido)
-            });
+            try {
+                const response = await fetch(`${API_URL}/pedidos/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosPedido)
+                });
 
-            if (response.ok) {
-                alert("Pedido realizado com sucesso e estoque atualizado!");
-                carregarDados();
-            } else {
-                const erro = await response.json();
-                alert("Erro ao realizar pedido: " + (erro.detail || "Verifique o estoque"));
+                if (response.ok) {
+                    alert("Pedido realizado com sucesso e estoque atualizado!");
+                    carregarDados();
+                } else {
+                    const erro = await response.json();
+                    alert("Erro ao realizar pedido: " + (erro.detail || "Verifique o estoque"));
+                }
+            } catch (e) {
+                alert("Falha de conexão com a API.");
             }
         }
 
-        // --- FUNÇÕES DE EXCLUSÃO ---
         async function deletarProduto(id) {
             if (confirm("Deseja realmente excluir este produto?")) {
-                const response = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
-                if (response.ok) {
-                    alert("Produto excluído com sucesso!");
-                    carregarDados();
-                } else {
-                    alert("Erro ao excluir o produto.");
+                try {
+                    const response = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        alert("Produto excluído com sucesso!");
+                        carregarDados();
+                    } else {
+                        alert("Erro ao excluir o produto.");
+                    }
+                } catch (e) {
+                    alert("Falha de conexão com a API.");
                 }
             }
         }
 
         async function deletarCliente(id) {
             if (confirm("Deseja realmente excluir este cliente?")) {
-                const response = await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
-                if (response.ok) {
-                    alert("Cliente excluído com sucesso!");
-                    carregarDados();
-                } else {
-                    alert("Erro ao excluir o cliente.");
+                try {
+                    const response = await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        alert("Cliente excluído com sucesso!");
+                        carregarDados();
+                    } else {
+                        alert("Erro ao excluir o cliente.");
+                    }
+                } catch (e) {
+                    alert("Falha de conexão com a API.");
                 }
             }
         }
@@ -443,7 +460,7 @@
                 });
 
                 // Relatório Clientes Fiéis
-                const resFieis = await fetch(`${API_URL},/relatorios/clientes-fieis`.replace(',','')); // Ajuste seguro de URL
+                const resFieis = await fetch(`${API_URL}/relatorios/clientes-fieis`);
                 const fieis = await resFieis.json();
                 const tabFieis = document.getElementById('tabelaClientesFieis');
                 tabFieis.innerHTML = '';
@@ -456,8 +473,8 @@
             }
         }
 
-        // Carregar tudo ao abrir a página
-        carregarDados();
+        // Executa ao carregar a página
+        window.onload = carregarDados;
     </script>
 </body>
 </html>
