@@ -26,8 +26,8 @@ class Cliente(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(100), nullable=False)
-    telefone = Column(String(20), nullable=True)
-    cnpj = Column(String(30), nullable=True)
+    telefone = Column(String(30), nullable=True)
+    cnpj = Column(String(40), nullable=True)
     endereco = Column(String(255), nullable=True)
     cidade = Column(String(100), nullable=True)
     observacao = Column(Text, nullable=True)
@@ -104,8 +104,9 @@ class PedidoResponse(BaseModel):
         from_attributes = True
 
 # --- INICIALIZAÇÃO FASTAPI ---
-app = FastAPI(title="Congelados e Cia API", version="2.2")
+app = FastAPI(title="Congelados e Cia API", version="2.3")
 
+# Configuração essencial do CORS para permitir comunicação com a Vercel e outros front-ends
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -143,7 +144,8 @@ def atualizar_produto(produto_id: int, produto: ProdutoCreate, db: Session = Dep
     prod_db.estoque = produto.estoque
     if produto.foto: prod_db.foto = produto.foto
     db.commit()
-    return {"mensagem": "Produto atualizado!"}
+    db.refresh(prod_db)
+    return {"mensagem": "Produto atualizado!", "produto": prod_db}
 
 @app.delete("/produtos/{produto_id}")
 def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
@@ -218,7 +220,8 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
         db.add(novo_item)
 
     db.commit()
-    return {"mensagem": "Pedido realizado!"}
+    db.refresh(novo_pedido)
+    return {"mensagem": "Pedido realizado!", "pedido": novo_pedido}
 
 # --- ROTAS DE RELATÓRIOS ---
 @app.get("/relatorios/produtos-mais-vendidos")
