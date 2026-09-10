@@ -8,12 +8,19 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
 from datetime import datetime
 
-DATABASE_URL = "sqlite:///./congelados.db" if not os.environ.get("RENDER") else "sqlite:////tmp/congelados.db"
+# --- CONFIGURAÇÃO DO BANCO DE DADOS (À PROVA DE FALHAS) ---
+# Se rodar no Render (nuvem), usa o Supabase. Se rodar no seu PC, força o SQLite.
+if os.environ.get("RENDER"):
+    DATABASE_URL = "postgresql://postgres:sYSzydt5gKAI7WcM@db.sxmvycuqiuvcyfvjddpb.supabase.co:5432/postgres"
+    engine = create_engine(DATABASE_URL)
+else:
+    DATABASE_URL = "sqlite:///./congelados.db"
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+# --- MODELOS DO BANCO ---
 class Produto(Base):
     __tablename__ = "produtos"
     id = Column(Integer, primary_key=True, index=True)
@@ -52,6 +59,7 @@ class ItemPedido(Base):
 
 Base.metadata.create_all(bind=engine)
 
+# --- SCHEMAS ---
 class ProdutoCreate(BaseModel):
     nome: str
     preco: float
@@ -100,7 +108,8 @@ class PedidoResponse(BaseModel):
     class Config:
         from_attributes = True
 
-app = FastAPI(title="Congelados e Cia API", version="2.7")
+# --- APP ---
+app = FastAPI(title="Congelados e Cia API", version="3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -119,14 +128,13 @@ def get_db():
 
 @app.get("/")
 def raiz():
-    return {"status": "API rodando com sucesso!"}
+    return {"status": "API rodando perfeitamente!"}
 
 @app.get("/produtos/", response_model=List[ProdutoResponse])
 def listar_produtos(db: Session = Depends(get_db)):
     try:
         return db.query(Produto).all()
     except Exception:
-        Base.metadata.create_all(bind=engine)
         return []
 
 @app.post("/produtos/", status_code=status.HTTP_201_CREATED)
@@ -150,7 +158,6 @@ def listar_clientes(db: Session = Depends(get_db)):
     try:
         return db.query(Cliente).all()
     except Exception:
-        Base.metadata.create_all(bind=engine)
         return []
 
 @app.post("/clientes/", status_code=status.HTTP_201_CREATED)
