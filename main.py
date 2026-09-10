@@ -104,7 +104,7 @@ class PedidoResponse(BaseModel):
         from_attributes = True
 
 # --- INICIALIZAÇÃO FASTAPI ---
-app = FastAPI(title="Congelados e Cia API", version="2.1")
+app = FastAPI(title="Congelados e Cia API", version="2.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -170,7 +170,8 @@ def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
     )
     db.add(novo_cliente)
     db.commit()
-    return {"mensagem": "Cliente cadastrado!"}
+    db.refresh(novo_cliente)
+    return {"mensagem": "Cliente cadastrado com sucesso!", "cliente": novo_cliente}
 
 @app.put("/clientes/{cliente_id}")
 def atualizar_cliente(cliente_id: int, cliente: ClienteCreate, db: Session = Depends(get_db)):
@@ -183,7 +184,8 @@ def atualizar_cliente(cliente_id: int, cliente: ClienteCreate, db: Session = Dep
     cli_db.cidade = cliente.cidade
     cli_db.observacao = cliente.observacao
     db.commit()
-    return {"mensagem": "Cliente atualizado!"}
+    db.refresh(cli_db)
+    return {"mensagem": "Cliente atualizado com sucesso!", "cliente": cli_db}
 
 @app.delete("/clientes/{cliente_id}")
 def excluir_cliente(cliente_id: int, db: Session = Depends(get_db)):
