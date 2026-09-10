@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Congelados e Cia - Gestão & BI</title>
-    <!-- Importando Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -19,418 +18,63 @@
             --sidebar-width: 260px;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
-            flex-direction: column;
-        }
-
-        @media (min-width: 768px) {
-            body {
-                flex-direction: row;
-            }
-        }
-
-        aside {
-            width: var(--sidebar-width);
-            background-color: #0f172a;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            left: -var(--sidebar-width);
-            transition: left 0.3s ease;
-            z-index: 1000;
-            top: 0;
-        }
-
-        aside.open {
-            left: 0;
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid #1e293b;
-        }
-
-        .logo-img {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--primary);
-            margin-bottom: 8px;
-        }
-
-        .sidebar-header h2 {
-            font-size: 0.95rem;
-            margin: 0;
-            color: #f8fafc;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .sidebar-menu li {
-            padding: 14px 20px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #94a3b8;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.2s;
-        }
-
-        .sidebar-menu li:hover, .sidebar-menu li.active {
-            background-color: #1e293b;
-            color: #fff;
-            border-left: 4px solid var(--primary);
-        }
-
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-        }
-        .sidebar-overlay.active {
-            display: block;
-        }
-
-        .main-content {
-            flex: 1;
-            width: 100%;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-
-        @media (min-width: 768px) {
-            aside {
-                left: 0;
-            }
-            .main-content {
-                margin-left: var(--sidebar-width);
-                padding: 25px;
-            }
-            .sidebar-overlay {
-                display: none !important;
-            }
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 12px 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            border: 1px solid var(--border-color);
-        }
-
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 1.4rem;
-            cursor: pointer;
-            color: var(--text-color);
-            margin-right: 12px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-        }
-
-        @media (min-width: 768px) {
-            .menu-toggle {
-                display: none;
-            }
-        }
-
-        .topbar h1 {
-            font-size: 1.1rem;
-            margin: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-            border: 1px solid var(--border-color);
-        }
-
-        @media (min-width: 768px) {
-            .card {
-                padding: 20px;
-                margin-bottom: 20px;
-            }
-        }
-
-        h2.section-title {
-            font-size: 1.05rem;
-            margin-top: 0;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 8px;
-            color: #334155;
-            margin-bottom: 12px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        @media (min-width: 500px) {
-            .stats-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        .stat-card {
-            background: #fff;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-        }
-
-        .stat-card h3 {
-            margin: 0 0 5px 0;
-            font-size: 0.75rem;
-            color: #64748b;
-            text-transform: uppercase;
-        }
-
-        .stat-card p {
-            margin: 0;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-
-        .charts-row {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        @media (min-width: 900px) {
-            .charts-row {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .chart-container {
-            position: relative;
-            height: 220px;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 260px;
-            }
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        @media (min-width: 600px) {
-            .form-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        input, select {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.95rem;
-            background-color: #fff;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 15px;
-            font-size: 0.95rem;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.2s;
-        }
-
-        @media (min-width: 600px) {
-            button {
-                width: auto;
-            }
-        }
-
-        button:hover {
-            background-color: var(--primary-dark);
-        }
-
-        button.btn-excluir {
-            background-color: var(--danger);
-            padding: 6px 10px;
-            font-size: 0.75rem;
-        }
-
-        button.btn-editar {
-            background-color: #0ea5e9;
-            padding: 6px 10px;
-            font-size: 0.75rem;
-            margin-right: 4px;
-        }
-
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
-        }
-
-        @media (min-width: 600px) {
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-            }
-        }
-
-        .product-card {
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .product-img {
-            width: 100%;
-            height: 110px;
-            object-fit: cover;
-            background-color: #e2e8f0;
-        }
-
-        .product-info {
-            padding: 10px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .pdv-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-
-        @media (min-width: 900px) {
-            .pdv-container {
-                grid-template-columns: 1fr 340px;
-            }
-        }
-
-        .pdv-product-card {
-            background: #fff;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .pdv-product-card:hover {
-            border-color: var(--primary);
-            background-color: #fff7ed;
-        }
-
-        .pdv-product-card.selected {
-            border-color: var(--primary);
-            background-color: #ffedd5;
-        }
-
-        .pdv-img {
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
-            object-fit: cover;
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-            min-width: 400px;
-        }
-
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.85rem;
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #f8fafc;
-            font-weight: 600;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; min-height: 100vh; flex-direction: column; }
+        @media (min-width: 768px) { body { flex-direction: row; } }
+        aside { width: var(--sidebar-width); background-color: #0f172a; color: #fff; display: flex; flex-direction: column; position: fixed; height: 100vh; left: -var(--sidebar-width); transition: left 0.3s ease; z-index: 1000; top: 0; }
+        aside.open { left: 0; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1e293b; }
+        .logo-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 8px; }
+        .sidebar-header h2 { font-size: 0.95rem; margin: 0; color: #f8fafc; }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; }
+        .sidebar-menu li { padding: 14px 20px; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.05); transition: all 0.2s; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background-color: #1e293b; color: #fff; border-left: 4px solid var(--primary); }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+        .sidebar-overlay.active { display: block; }
+        .main-content { flex: 1; width: 100%; padding: 15px; box-sizing: border-box; }
+        @media (min-width: 768px) { aside { left: 0; } .main-content { margin-left: var(--sidebar-width); padding: 25px; } .sidebar-overlay { display: none !important; } }
+        .topbar { display: flex; align-items: center; background: var(--card-bg); padding: 12px 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid var(--border-color); }
+        .menu-toggle { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-color); margin-right: 12px; padding: 0; display: flex; align-items: center; }
+        @media (min-width: 768px) { .menu-toggle { display: none; } }
+        .topbar h1 { font-size: 1.1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .card { background-color: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); border: 1px solid var(--border-color); }
+        @media (min-width: 768px) { .card { padding: 20px; margin-bottom: 20px; } }
+        h2.section-title { font-size: 1.05rem; margin-top: 0; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; color: #334155; margin-bottom: 12px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 15px; }
+        @media (min-width: 500px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        .stat-card { background: #fff; padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); }
+        .stat-card h3 { margin: 0 0 5px 0; font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
+        .stat-card p { margin: 0; font-size: 1.3rem; font-weight: bold; color: var(--text-color); }
+        .charts-row { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px; }
+        @media (min-width: 900px) { .charts-row { grid-template-columns: 1fr 1fr; } }
+        .chart-container { position: relative; height: 220px; width: 100%; }
+        @media (min-width: 768px) { .chart-container { height: 260px; } }
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+        @media (min-width: 600px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+        input, select { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; background-color: #fff; width: 100%; box-sizing: border-box; }
+        button { background-color: var(--primary); color: white; border: none; padding: 12px 15px; font-size: 0.95rem; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: background-color 0.2s; }
+        @media (min-width: 600px) { button { width: auto; } }
+        button:hover { background-color: var(--primary-dark); }
+        button.btn-excluir { background-color: var(--danger); padding: 6px 10px; font-size: 0.75rem; }
+        button.btn-editar { background-color: #0ea5e9; padding: 6px 10px; font-size: 0.75rem; margin-right: 4px; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+        @media (min-width: 600px) { .products-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
+        .product-card { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+        .product-img { width: 100%; height: 110px; object-fit: cover; background-color: #e2e8f0; }
+        .product-info { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .pdv-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        @media (min-width: 900px) { .pdv-container { grid-template-columns: 1fr 340px; } }
+        .pdv-product-card { background: #fff; border: 2px solid var(--border-color); border-radius: 8px; padding: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; }
+        .pdv-product-card:hover { border-color: var(--primary); background-color: #fff7ed; }
+        .pdv-product-card.selected { border-color: var(--primary); background-color: #ffedd5; }
+        .pdv-img { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; }
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; min-width: 400px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; vertical-align: middle; }
+        th { background-color: #f8fafc; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -461,20 +105,10 @@
         <!-- TELA 1: DASHBOARD -->
         <div id="page-dashboard" class="page active">
             <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Total de Produtos</h3>
-                    <p id="statTotalProdutos">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Clientes Cadastrados</h3>
-                    <p id="statTotalClientes">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Valor Imobilizado</h3>
-                    <p id="statValorEstoque">R$ 0,00</p>
-                </div>
+                <div class="stat-card"><h3>Total de Produtos</h3><p id="statTotalProdutos">0</p></div>
+                <div class="stat-card"><h3>Clientes Cadastrados</h3><p id="statTotalClientes">0</p></div>
+                <div class="stat-card"><h3>Valor Imobilizado</h3><p id="statValorEstoque">R$ 0,00</p></div>
             </div>
-
             <div class="charts-row">
                 <div class="card" style="margin-bottom:0;">
                     <h2 class="section-title">Desempenho de Vendas</h2>
@@ -493,33 +127,18 @@
                 <h2 class="section-title" id="formProdutoTitulo">Cadastrar Novo Produto com Foto</h2>
                 <input type="hidden" id="prodEditId">
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label>Nome do Produto</label>
-                        <input type="text" id="prodNome" placeholder="Ex: Coxinha de Frango">
-                    </div>
-                    <div class="form-group">
-                        <label>Preço de Venda (R$)</label>
-                        <input type="number" step="0.01" id="prodPreco" placeholder="0.00">
-                    </div>
-                    <div class="form-group">
-                        <label>Estoque Inicial</label>
-                        <input type="number" id="prodEstoque" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Upload de Foto</label>
-                        <input type="file" id="prodFotoFile" accept="image/*" onchange="converterImagem(event)">
-                    </div>
+                    <div class="form-group"><label>Nome do Produto</label><input type="text" id="prodNome"></div>
+                    <div class="form-group"><label>Preço de Venda (R$)</label><input type="number" step="0.01" id="prodPreco"></div>
+                    <div class="form-group"><label>Estoque Inicial</label><input type="number" id="prodEstoque"></div>
+                    <div class="form-group"><label>Upload de Foto</label><input type="file" id="prodFotoFile" accept="image/*" onchange="converterImagem(event)"></div>
                 </div>
                 <input type="hidden" id="prodFotoBase64">
-                <div style="margin-bottom: 12px;">
-                    <img id="previewFoto" src="" alt="Prévia" style="max-width: 80px; max-height: 80px; display:none; border-radius: 6px; border: 1px solid var(--border-color);">
-                </div>
+                <div style="margin-bottom: 12px;"><img id="previewFoto" src="" alt="Prévia" style="max-width: 80px; max-height: 80px; display:none; border-radius: 6px; border: 1px solid var(--border-color);"></div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button onclick="salvarProduto()">Salvar Produto</button>
                     <button id="btnCancelarProd" onclick="limparFormularioProduto()" style="background-color: #64748b; display:none;">Cancelar</button>
                 </div>
             </div>
-
             <div class="card">
                 <h2 class="section-title">Catálogo de Produtos</h2>
                 <button onclick="carregarDados()" style="margin-bottom: 12px; background-color: #0ea5e9;">Atualizar Dados</button>
@@ -533,30 +152,18 @@
                 <h2 class="section-title" id="formClienteTitulo">Cadastrar Novo Cliente</h2>
                 <input type="hidden" id="cliEditId">
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label>Nome do Cliente</label>
-                        <input type="text" id="cliNome" placeholder="Ex: Maria Silva">
-                    </div>
-                    <div class="form-group">
-                        <label>Telefone</label>
-                        <input type="text" id="cliTelefone" placeholder="(35) 99999-9999">
-                    </div>
+                    <div class="form-group"><label>Nome do Cliente</label><input type="text" id="cliNome"></div>
+                    <div class="form-group"><label>Telefone</label><input type="text" id="cliTelefone"></div>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button onclick="salvarCliente()">Salvar Cliente</button>
                     <button id="btnCancelarCli" onclick="limparFormularioCliente()" style="background-color: #64748b; display:none;">Cancelar</button>
                 </div>
             </div>
-
             <div class="card">
                 <h2 class="section-title">Clientes Cadastrados</h2>
                 <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr>
-                        </thead>
-                        <tbody id="tabelaClientes"></tbody>
-                    </table>
+                    <table><thead><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="tabelaClientes"></tbody></table>
                 </div>
             </div>
         </div>
@@ -568,23 +175,12 @@
                     <h2 class="section-title">Selecione o Produto</h2>
                     <div id="pdvListaProdutos" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto;"></div>
                 </div>
-
                 <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
                     <div>
                         <h2 class="section-title">Finalizar Venda</h2>
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label>Cliente</label>
-                            <select id="pedidoCliente"><option value="">Selecione...</option></select>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label>Produto Escolhido</label>
-                            <input type="text" id="pdvProdutoSelecionadoNome" readonly value="Nenhum selecionado" style="background: #f8fafc; font-weight:bold;">
-                            <input type="hidden" id="pedidoProdutoId">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label>Quantidade</label>
-                            <input type="number" id="pedidoQtd" value="1" min="1" oninput="atualizarTotalPDV()">
-                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;"><label>Cliente</label><select id="pedidoCliente"><option value="">Selecione...</option></select></div>
+                        <div class="form-group" style="margin-bottom: 12px;"><label>Produto Escolhido</label><input type="text" id="pdvProdutoSelecionadoNome" readonly value="Nenhum selecionado" style="background: #f8fafc; font-weight:bold;"><input type="hidden" id="pedidoProdutoId"></div>
+                        <div class="form-group" style="margin-bottom: 12px;"><label>Quantidade</label><input type="number" id="pedidoQtd" value="1" min="1" oninput="atualizarTotalPDV()"></div>
                         <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 12px;">
                             <p style="margin:0; font-size:0.85rem; color:#64748b;">Total do Pedido:</p>
                             <p id="pdvTotalPreco" style="margin:4px 0 0 0; font-size:1.25rem; font-weight:bold; color:var(--primary);">R$ 0,00</p>
@@ -601,49 +197,50 @@
                 <h2 class="section-title">Calculadora de Custo, Preço de Venda e Lucratividade</h2>
                 <div class="table-responsive">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Foto</th>
-                                <th>Produto</th>
-                                <th>Custo (R$)</th>
-                                <th>Venda (R$)</th>
-                                <th>Lucro Unit.</th>
-                                <th>Margem</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Foto</th><th>Produto</th><th>Custo (R$)</th><th>Venda (R$)</th><th>Lucro Unit.</th><th>Margem</th></tr></thead>
                         <tbody id="tabelaFinancasLucro"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- TELA 6: RELATÓRIOS BI COM LUCRO TOTAL E GRÁFICO COMPARATIVO -->
+        <!-- TELA 6: RELATÓRIOS BI -->
         <div id="page-relatorios" class="page">
+            
+            <!-- HISTÓRICO DE VENDAS MÊS A MÊS -->
             <div class="card">
-                <h2 class="section-title">📈 Faturamento vs. Lucro Total por Produto</h2>
-                <div class="chart-container" style="height: 300px;"><canvas id="graficoComparativoLucro"></canvas></div>
+                <h2 class="section-title">📈 Histórico de Vendas Mês a Mês</h2>
+                <div class="chart-container" style="height: 250px;"><canvas id="graficoHistoricoMeses"></canvas></div>
             </div>
 
+            <!-- DETALHAMENTO E RANKING POR MÊS -->
             <div class="card">
-                <h2 class="section-title">📦 Relatório de Vendas e Lucro Real</h2>
+                <h2 class="section-title">🔍 Detalhamento e Ranking por Mês</h2>
+                <div class="form-group" style="max-width: 300px; margin-bottom: 15px;">
+                    <label>Selecione o Mês</label>
+                    <select id="selectFiltroMes" onchange="atualizarTabelaMes()"></select>
+                </div>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <p style="margin:0; font-size:0.9rem; color:#64748b;">Faturamento Total no Mês Selecionado:</p>
+                    <p id="totalFaturadoMes" style="margin:4px 0 0 0; font-size:1.4rem; font-weight:bold; color:var(--success);">R$ 0,00</p>
+                </div>
+                
+                <h3 style="font-size: 1rem; color: #334155; margin-bottom: 10px;">Quem mais comprou neste mês?</h3>
                 <div class="table-responsive">
                     <table>
-                        <thead>
-                            <tr><th>Produto</th><th>Qtd Vendida</th><th>Faturamento Total</th><th>Lucro Total Gerado</th></tr>
-                        </thead>
-                        <tbody id="tabelaRelatorioLucroTotal"></tbody>
+                        <thead><tr><th>Posição</th><th>Cliente</th><th>Total Comprado (R$)</th></tr></thead>
+                        <tbody id="tabelaRankingClientesMes"></tbody>
                     </table>
                 </div>
             </div>
 
+            <!-- RELATÓRIO DE LUCRO TOTAL GERAL -->
             <div class="card">
-                <h2 class="section-title">👥 Clientes Fiéis</h2>
+                <h2 class="section-title">💰 Desempenho Geral: Faturamento vs. Lucro Total</h2>
                 <div class="table-responsive">
                     <table>
-                        <thead>
-                            <tr><th>Cliente</th><th>Total de Pedidos</th></tr>
-                        </thead>
-                        <tbody id="tabelaRelatorioClientes"></tbody>
+                        <thead><tr><th>Produto</th><th>Qtd Vendida</th><th>Faturamento Total</th><th>Lucro Total Gerado</th></tr></thead>
+                        <tbody id="tabelaRelatorioLucroTotal"></tbody>
                     </table>
                 </div>
             </div>
@@ -654,10 +251,15 @@
         const API_URL = "https://congelados-api.onrender.com";
         let chartVendasInstance = null;
         let chartEstoqueInstance = null;
-        let chartComparativoInstance = null;
+        let chartHistoricoInstance = null;
         
         let produtosGlobais = [];
+        let clientesGlobais = [];
+        let pedidosGlobais = []; // Guarda todos os pedidos reais para o filtro de meses
         let custosProdutos = JSON.parse(localStorage.getItem('congelados_custos') || '{}');
+
+        // Estrutura para os dados do mês
+        let dadosPorMes = {};
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
@@ -671,26 +273,13 @@
             document.getElementById(`page-${paginaId}`).classList.add('active');
             document.getElementById(`menu-${paginaId}`).classList.add('active');
 
-            const titulos = {
-                'dashboard': 'Dashboard Analítico',
-                'produtos': 'Produtos & Estoque',
-                'clientes': 'Gestão de Clientes',
-                'pedidos': 'Registrar Pedido (PDV)',
-                'financas': 'Finanças & Lucro',
-                'relatorios': 'Relatórios Gerenciais BI'
-            };
+            const titulos = { 'dashboard': 'Dashboard Analítico', 'produtos': 'Produtos & Estoque', 'clientes': 'Gestão de Clientes', 'pedidos': 'Registrar Pedido (PDV)', 'financas': 'Finanças & Lucro', 'relatorios': 'Relatórios Gerenciais BI' };
             document.getElementById('page-title').innerText = titulos[paginaId];
 
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.remove('open');
-                document.getElementById('sidebarOverlay').classList.remove('active');
-            }
+            if (window.innerWidth < 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
 
-            if(paginaId === 'dashboard') {
-                atualizarGraficosDashboard();
-            } else if(paginaId === 'relatorios') {
-                atualizarGraficoComparativo();
-            }
+            if(paginaId === 'dashboard') atualizarGraficosDashboard();
+            if(paginaId === 'relatorios') processarRelatoriosMensais();
         }
 
         function converterImagem(event) {
@@ -698,11 +287,9 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const base64String = e.target.result;
-                    document.getElementById('prodFotoBase64').value = base64String;
-                    const preview = document.getElementById('previewFoto');
-                    preview.src = base64String;
-                    preview.style.display = 'block';
+                    document.getElementById('prodFotoBase64').value = e.target.result;
+                    document.getElementById('previewFoto').src = e.target.result;
+                    document.getElementById('previewFoto').style.display = 'block';
                 }
                 reader.readAsDataURL(file);
             }
@@ -710,357 +297,215 @@
 
         async function salvarProduto() {
             const id = document.getElementById('prodEditId').value;
-            const nome = document.getElementById('prodNome').value;
-            const preco = parseFloat(document.getElementById('prodPreco').value);
-            const estoque = parseInt(document.getElementById('prodEstoque').value);
-            const foto = document.getElementById('prodFotoBase64').value;
-
-            if (!nome || isNaN(preco) || isNaN(estoque)) {
-                alert("Preencha os campos obrigatórios.");
-                return;
-            }
-
-            const response = await fetch(id ? `${API_URL}/produtos/${id}` : `${API_URL}/produtos/`, {
-                method: id ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, preco, estoque, foto })
-            });
-
-            if (response.ok) {
-                alert(id ? "Produto atualizado!" : "Produto cadastrado!");
-                limparFormularioProduto();
-                carregarDados();
-            }
+            const payload = { nome: document.getElementById('prodNome').value, preco: parseFloat(document.getElementById('prodPreco').value), estoque: parseInt(document.getElementById('prodEstoque').value), foto: document.getElementById('prodFotoBase64').value };
+            if (!payload.nome || isNaN(payload.preco) || isNaN(payload.estoque)) return alert("Preencha os campos obrigatórios.");
+            const response = await fetch(id ? `${API_URL}/produtos/${id}` : `${API_URL}/produtos/`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (response.ok) { alert("Sucesso!"); limparFormularioProduto(); carregarDados(); }
         }
 
         function prepararEdicaoProduto(id, nome, preco, estoque, foto) {
-            document.getElementById('prodEditId').value = id;
-            document.getElementById('prodNome').value = nome;
-            document.getElementById('prodPreco').value = preco;
-            document.getElementById('prodEstoque').value = estoque;
-            document.getElementById('prodFotoBase64').value = foto || '';
-            if(foto) {
-                const preview = document.getElementById('previewFoto');
-                preview.src = foto;
-                preview.style.display = 'block';
-            }
-            document.getElementById('formProdutoTitulo').innerText = "Editar Produto";
-            document.getElementById('btnCancelarProd').style.display = "inline-block";
-            mudarPagina('produtos');
+            document.getElementById('prodEditId').value = id; document.getElementById('prodNome').value = nome; document.getElementById('prodPreco').value = preco; document.getElementById('prodEstoque').value = estoque; document.getElementById('prodFotoBase64').value = foto || '';
+            if(foto) { document.getElementById('previewFoto').src = foto; document.getElementById('previewFoto').style.display = 'block'; }
+            document.getElementById('formProdutoTitulo').innerText = "Editar Produto"; document.getElementById('btnCancelarProd').style.display = "inline-block"; mudarPagina('produtos');
         }
 
         function limparFormularioProduto() {
-            document.getElementById('prodEditId').value = '';
-            document.getElementById('prodNome').value = '';
-            document.getElementById('prodPreco').value = '';
-            document.getElementById('prodEstoque').value = '';
-            document.getElementById('prodFotoFile').value = '';
-            document.getElementById('prodFotoBase64').value = '';
-            document.getElementById('previewFoto').style.display = 'none';
-            document.getElementById('formProdutoTitulo').innerText = "Cadastrar Novo Produto com Foto";
-            document.getElementById('btnCancelarProd').style.display = "none";
+            document.getElementById('prodEditId').value = ''; document.getElementById('prodNome').value = ''; document.getElementById('prodPreco').value = ''; document.getElementById('prodEstoque').value = ''; document.getElementById('prodFotoFile').value = ''; document.getElementById('prodFotoBase64').value = ''; document.getElementById('previewFoto').style.display = 'none'; document.getElementById('formProdutoTitulo').innerText = "Cadastrar Novo Produto"; document.getElementById('btnCancelarProd').style.display = "none";
         }
 
         async function salvarCliente() {
             const id = document.getElementById('cliEditId').value;
-            const nome = document.getElementById('cliNome').value;
-            const telefone = document.getElementById('cliTelefone').value;
-
-            if (!nome) { alert("Preencha o nome."); return; }
-
-            const response = await fetch(id ? `${API_URL}/clientes/${id}` : `${API_URL}/clientes/`, {
-                method: id ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, telefone })
-            });
-
-            if (response.ok) {
-                alert("Salvo com sucesso!");
-                limparFormularioCliente();
-                carregarDados();
-            }
+            const payload = { nome: document.getElementById('cliNome').value, telefone: document.getElementById('cliTelefone').value };
+            if (!payload.nome) return alert("Preencha o nome.");
+            const response = await fetch(id ? `${API_URL}/clientes/${id}` : `${API_URL}/clientes/`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (response.ok) { alert("Sucesso!"); limparFormularioCliente(); carregarDados(); }
         }
 
         function prepararEdicaoCliente(id, nome, telefone) {
-            document.getElementById('cliEditId').value = id;
-            document.getElementById('cliNome').value = nome;
-            document.getElementById('cliTelefone').value = telefone;
-            document.getElementById('formClienteTitulo').innerText = "Editar Cliente";
-            document.getElementById('btnCancelarCli').style.display = "inline-block";
-            mudarPagina('clientes');
+            document.getElementById('cliEditId').value = id; document.getElementById('cliNome').value = nome; document.getElementById('cliTelefone').value = telefone; document.getElementById('formClienteTitulo').innerText = "Editar Cliente"; document.getElementById('btnCancelarCli').style.display = "inline-block"; mudarPagina('clientes');
         }
 
         function limparFormularioCliente() {
-            document.getElementById('cliEditId').value = '';
-            document.getElementById('cliNome').value = '';
-            document.getElementById('cliTelefone').value = '';
-            document.getElementById('formClienteTitulo').innerText = "Cadastrar Novo Cliente";
-            document.getElementById('btnCancelarCli').style.display = "none";
+            document.getElementById('cliEditId').value = ''; document.getElementById('cliNome').value = ''; document.getElementById('cliTelefone').value = ''; document.getElementById('formClienteTitulo').innerText = "Cadastrar Novo Cliente"; document.getElementById('btnCancelarCli').style.display = "none";
         }
 
         function atualizarCustoProduto(prodId, precoVenda) {
-            const inputCusto = document.getElementById(`custo_${prodId}`);
-            const custo = parseFloat(inputCusto.value) || 0;
-            custosProdutos[prodId] = custo;
-            localStorage.setItem('congelados_custos', JSON.stringify(custosProdutos));
-
-            const lucroUnit = precoVenda - custo;
-            const margem = precoVenda > 0 ? ((lucroUnit / precoVenda) * 100).toFixed(1) : 0;
-
-            document.getElementById(`lucro_${prodId}`).innerText = `R$ ${lucroUnit.toFixed(2)}`;
-            document.getElementById(`margem_${prodId}`).innerText = `${margem}%`;
+            const custo = parseFloat(document.getElementById(`custo_${prodId}`).value) || 0;
+            custosProdutos[prodId] = custo; localStorage.setItem('congelados_custos', JSON.stringify(custosProdutos));
+            const lucroUnit = precoVenda - custo; const margem = precoVenda > 0 ? ((lucroUnit / precoVenda) * 100).toFixed(1) : 0;
+            document.getElementById(`lucro_${prodId}`).innerText = `R$ ${lucroUnit.toFixed(2)}`; document.getElementById(`margem_${prodId}`).innerText = `${margem}%`;
         }
 
         function selecionarProdutoPDV(id, nome, preco) {
-            document.getElementById('pedidoProdutoId').value = id;
-            document.getElementById('pdvProdutoSelecionadoNome').value = `${nome} (R$ ${preco.toFixed(2)})`;
-            atualizarTotalPDV();
-
-            document.querySelectorAll('.pdv-product-card').forEach(card => card.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
+            document.getElementById('pedidoProdutoId').value = id; document.getElementById('pdvProdutoSelecionadoNome').value = `${nome} (R$ ${preco.toFixed(2)})`; atualizarTotalPDV();
+            document.querySelectorAll('.pdv-product-card').forEach(card => card.classList.remove('selected')); event.currentTarget.classList.add('selected');
         }
 
         function atualizarTotalPDV() {
-            const prodId = document.getElementById('pedidoProdutoId').value;
-            const qtd = parseInt(document.getElementById('pedidoQtd').value) || 1;
-            if(!prodId) { document.getElementById('pdvTotalPreco').innerText = "R$ 0,00"; return; }
+            const prodId = document.getElementById('pedidoProdutoId').value; const qtd = parseInt(document.getElementById('pedidoQtd').value) || 1;
+            if(!prodId) return document.getElementById('pdvTotalPreco').innerText = "R$ 0,00";
             const produto = produtosGlobais.find(p => p.id == prodId);
-            if(produto) {
-                document.getElementById('pdvTotalPreco').innerText = `R$ ${(produto.preco * qtd).toFixed(2)}`;
-            }
+            if(produto) document.getElementById('pdvTotalPreco').innerText = `R$ ${(produto.preco * qtd).toFixed(2)}`;
         }
 
         async function criarPedido() {
-            const cliente_id = parseInt(document.getElementById('pedidoCliente').value);
-            const produto_id = parseInt(document.getElementById('pedidoProdutoId').value);
-            const quantidade = parseInt(document.getElementById('pedidoQtd').value);
-
-            if (!cliente_id || !produto_id || isNaN(quantidade)) {
-                alert("Selecione cliente, produto e quantidade.");
-                return;
-            }
-
-            const response = await fetch(`${API_URL}/pedidos/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cliente_id: cliente_id, itens: [{ produto_id: produto_id, quantidade: quantidade }] })
-            });
-
-            if (response.ok) {
-                alert("Pedido realizado com sucesso!");
-                document.getElementById('pedidoProdutoId').value = '';
-                document.getElementById('pdvProdutoSelecionadoNome').value = 'Nenhum selecionado';
-                document.getElementById('pdvTotalPreco').innerText = "R$ 0,00";
-                carregarDados();
-            } else {
-                alert("Erro ao realizar pedido.");
-            }
+            const payload = { cliente_id: parseInt(document.getElementById('pedidoCliente').value), itens: [{ produto_id: parseInt(document.getElementById('pedidoProdutoId').value), quantidade: parseInt(document.getElementById('pedidoQtd').value) }] };
+            if (!payload.cliente_id || !payload.itens[0].produto_id || isNaN(payload.itens[0].quantidade)) return alert("Selecione cliente, produto e quantidade.");
+            const response = await fetch(`${API_URL}/pedidos/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (response.ok) { alert("Pedido realizado!"); document.getElementById('pedidoProdutoId').value = ''; document.getElementById('pdvProdutoSelecionadoNome').value = 'Nenhum selecionado'; document.getElementById('pdvTotalPreco').innerText = "R$ 0,00"; carregarDados(); } else { alert("Erro ao realizar pedido."); }
         }
 
-        async function deletarProduto(id) {
-            if (confirm("Excluir produto?")) {
-                await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
-                carregarDados();
-            }
-        }
-
-        async function deletarCliente(id) {
-            if (confirm("Excluir cliente?")) {
-                await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
-                carregarDados();
-            }
-        }
+        async function deletarProduto(id) { if (confirm("Excluir produto?")) { await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' }); carregarDados(); } }
+        async function deletarCliente(id) { if (confirm("Excluir cliente?")) { await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' }); carregarDados(); } }
 
         async function atualizarGraficosDashboard() {
-            try {
-                const resProd = await fetch(`${API_URL}/produtos/`);
-                const produtos = await resProd.json();
-                const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
-                const maisVendidos = await resMais.json();
-
-                const labelsVendas = maisVendidos.map(m => m.produto);
-                const dataVendas = maisVendidos.map(m => m.quantidade_vendida);
-
-                if (chartVendasInstance) chartVendasInstance.destroy();
-                chartVendasInstance = new Chart(document.getElementById('graficoVendas').getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: labelsVendas.length ? labelsVendas : ['Sem Vendas'],
-                        datasets: [{ label: 'Qtd', data: dataVendas.length ? dataVendas : [0], backgroundColor: '#ea580c', borderRadius: 6 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-
-                const labelsEstoque = produtos.map(p => p.nome);
-                const dataEstoque = produtos.map(p => p.estoque);
-
-                if (chartEstoqueInstance) chartEstoqueInstance.destroy();
-                chartEstoqueInstance = new Chart(document.getElementById('graficoEstoque').getContext('2d'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: labelsEstoque.length ? labelsEstoque : ['Sem Estoque'],
-                        datasets: [{ data: dataEstoque.length ? dataEstoque : [1], backgroundColor: ['#ea580c', '#0ea5e9', '#16a34a', '#eab308', '#6366f1'] }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            } catch (e) { console.error(e); }
+            const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
+            const maisVendidos = await resMais.json();
+            if (chartVendasInstance) chartVendasInstance.destroy();
+            chartVendasInstance = new Chart(document.getElementById('graficoVendas').getContext('2d'), { type: 'bar', data: { labels: maisVendidos.map(m => m.produto), datasets: [{ label: 'Qtd', data: maisVendidos.map(m => m.quantidade_vendida), backgroundColor: '#ea580c', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } });
+            if (chartEstoqueInstance) chartEstoqueInstance.destroy();
+            chartEstoqueInstance = new Chart(document.getElementById('graficoEstoque').getContext('2d'), { type: 'doughnut', data: { labels: produtosGlobais.map(p => p.nome), datasets: [{ data: produtosGlobais.map(p => p.estoque), backgroundColor: ['#ea580c', '#0ea5e9', '#16a34a', '#eab308', '#6366f1'] }] }, options: { responsive: true, maintainAspectRatio: false } });
         }
 
-        async function atualizarGraficoComparativo() {
-            try {
-                const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
-                const maisVendidos = await resMais.json();
-
-                const labels = [];
-                const faturamentos = [];
-                const lucrosTotais = [];
-
-                maisVendidos.forEach(m => {
-                    labels.push(m.produto);
-                    faturamentos.push(m.total_em_reais);
-                    
-                    // Encontra o produto correspondente para calcular o lucro total baseado no custo real
-                    const prod = produtosGlobais.find(p => p.nome === m.produto);
-                    let custoUnit = 0;
-                    if(prod) {
-                        custoUnit = custosProdutos[prod.id] !== undefined ? custosProdutos[prod.id] : (prod.preco * 0.4);
-                    }
-                    const lucroUnit = (prod ? prod.preco : 0) - custoUnit;
-                    lucrosTotais.push(lucroUnit * m.quantidade_vendida);
+        // LÓGICA DE AGRUPAMENTO MENSAL PARA OS RELATÓRIOS
+        function processarRelatoriosMensais() {
+            dadosPorMes = {};
+            
+            // Agrupa todos os pedidos pelo Mês/Ano
+            pedidosGlobais.forEach(ped => {
+                const date = new Date(ped.data_criacao);
+                const mesAno = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+                
+                if(!dadosPorMes[mesAno]) {
+                    dadosPorMes[mesAno] = { totalFaturado: 0, clientes: {} };
+                }
+                
+                let totalDoPedido = 0;
+                ped.itens.forEach(item => {
+                    totalDoPedido += item.quantidade * item.preco_venda;
                 });
+                
+                dadosPorMes[mesAno].totalFaturado += totalDoPedido;
+                
+                if(!dadosPorMes[mesAno].clientes[ped.cliente_id]) {
+                    dadosPorMes[mesAno].clientes[ped.cliente_id] = 0;
+                }
+                dadosPorMes[mesAno].clientes[ped.cliente_id] += totalDoPedido;
+            });
 
-                if (chartComparativoInstance) chartComparativoInstance.destroy();
-                chartComparativoInstance = new Chart(document.getElementById('graficoComparativoLucro').getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: labels.length ? labels : ['Sem Dados'],
-                        datasets: [
-                            { label: 'Faturamento Total (R$)', data: faturamentos, backgroundColor: '#0ea5e9', borderRadius: 6 },
-                            { label: 'Lucro Total Gerado (R$)', data: lucrosTotais, backgroundColor: '#16a34a', borderRadius: 6 }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            } catch (e) { console.error(e); }
+            // 1. Atualizar o Gráfico de Histórico
+            const mesesLabels = Object.keys(dadosPorMes).sort(); // Ordena as datas
+            const faturamentos = mesesLabels.map(mes => dadosPorMes[mes].totalFaturado);
+
+            if (chartHistoricoInstance) chartHistoricoInstance.destroy();
+            chartHistoricoInstance = new Chart(document.getElementById('graficoHistoricoMeses').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: mesesLabels.length ? mesesLabels : ['Nenhum dado'],
+                    datasets: [{ label: 'Faturamento Total (R$)', data: faturamentos, backgroundColor: '#0ea5e9', borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 2. Popular o Select de Meses
+            const selectMes = document.getElementById('selectFiltroMes');
+            selectMes.innerHTML = '';
+            mesesLabels.forEach(mes => {
+                selectMes.innerHTML += `<option value="${mes}">${mes}</option>`;
+            });
+
+            // 3. Atualizar a Tabela do Mês Selecionado (se houver dados)
+            if(mesesLabels.length > 0) {
+                // Seleciona o último mês por padrão
+                selectMes.value = mesesLabels[mesesLabels.length - 1];
+                atualizarTabelaMes();
+            } else {
+                document.getElementById('tabelaRankingClientesMes').innerHTML = '<tr><td colspan="3">Nenhuma venda registrada ainda.</td></tr>';
+            }
+        }
+
+        function atualizarTabelaMes() {
+            const mesSelecionado = document.getElementById('selectFiltroMes').value;
+            const dados = dadosPorMes[mesSelecionado];
+            
+            if(!dados) return;
+
+            // Atualiza Faturamento Total do Mês
+            document.getElementById('totalFaturadoMes').innerText = `R$ ${dados.totalFaturado.toFixed(2)}`;
+
+            // Ordena os clientes de quem mais comprou para quem menos comprou
+            const ranking = Object.keys(dados.clientes).map(cliId => {
+                const clienteObj = clientesGlobais.find(c => c.id == cliId);
+                return {
+                    nome: clienteObj ? clienteObj.nome : `ID Desconhecido (${cliId})`,
+                    total: dados.clientes[cliId]
+                };
+            }).sort((a, b) => b.total - a.total); // Ordenação decrescente
+
+            const tabela = document.getElementById('tabelaRankingClientesMes');
+            tabela.innerHTML = '';
+            
+            ranking.forEach((cli, index) => {
+                let trofeu = '';
+                if(index === 0) trofeu = '🥇 ';
+                if(index === 1) trofeu = '🥈 ';
+                if(index === 2) trofeu = '🥉 ';
+                
+                tabela.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold;">${trofeu}${index + 1}º</td>
+                        <td>${cli.nome}</td>
+                        <td style="font-weight:bold; color:var(--primary);">R$ ${cli.total.toFixed(2)}</td>
+                    </tr>`;
+            });
         }
 
         async function carregarDados() {
             try {
-                const resProd = await fetch(`${API_URL}/produtos/`);
-                produtosGlobais = await resProd.json();
-                
-                const catalogo = document.getElementById('catalogoProdutos');
-                const pdvLista = document.getElementById('pdvListaProdutos');
-                const tabelaFinancasLucro = document.getElementById('tabelaFinancasLucro');
-                const tabelaRelLucroTotal = document.getElementById('tabelaRelatorioLucroTotal');
-                const tabelaRelClientes = document.getElementById('tabelaRelatorioClientes');
+                const resProd = await fetch(`${API_URL}/produtos/`); produtosGlobais = await resProd.json();
+                const resCli = await fetch(`${API_URL}/clientes/`); clientesGlobais = await resCli.json();
+                const resPed = await fetch(`${API_URL}/pedidos/`); pedidosGlobais = await resPed.json();
 
-                catalogo.innerHTML = '';
-                pdvLista.innerHTML = '';
-                tabelaFinancasLucro.innerHTML = '';
-                tabelaRelLucroTotal.innerHTML = '';
-                tabelaRelClientes.innerHTML = '';
-
-                let valorTotalEstoque = 0;
+                const catalogo = document.getElementById('catalogoProdutos'); const pdvLista = document.getElementById('pdvListaProdutos'); const tabelaFinancas = document.getElementById('tabelaFinancasLucro'); const tabelaRelLucro = document.getElementById('tabelaRelatorioLucroTotal');
+                catalogo.innerHTML = ''; pdvLista.innerHTML = ''; tabelaFinancas.innerHTML = ''; tabelaRelLucro.innerHTML = '';
+                let valorEstoque = 0;
 
                 produtosGlobais.forEach(p => {
-                    const precoNum = parseFloat(p.preco) || 0;
-                    valorTotalEstoque += (precoNum * p.estoque);
-                    const imgUrl = p.foto || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
-                    
-                    const custoSalvo = custosProdutos[p.id] !== undefined ? custosProdutos[p.id] : (precoNum * 0.4);
-                    const lucroUnit = precoNum - custoSalvo;
-                    const margem = precoNum > 0 ? ((lucroUnit / precoNum) * 100).toFixed(1) : 0;
+                    const preco = parseFloat(p.preco) || 0; valorEstoque += (preco * p.estoque);
+                    const img = p.foto || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+                    const custo = custosProdutos[p.id] !== undefined ? custosProdutos[p.id] : (preco * 0.4);
+                    const lucroUnit = preco - custo; const margem = preco > 0 ? ((lucroUnit / preco) * 100).toFixed(1) : 0;
 
-                    catalogo.innerHTML += `
-                        <div class="product-card">
-                            <img src="${imgUrl}" alt="${p.nome}" class="product-img">
-                            <div class="product-info">
-                                <div>
-                                    <h4 style="margin:0 0 4px 0; font-size:0.9rem;">${p.nome}</h4>
-                                    <p style="margin:0; color:#64748b; font-size:0.8rem;">R$ ${precoNum.toFixed(2)} | Estoque: <strong>${p.estoque}</strong></p>
-                                </div>
-                                <div style="margin-top: 8px; display:flex; gap:4px;">
-                                    <button class="btn-editar" onclick="prepararEdicaoProduto(${p.id}, '${p.nome}', ${precoNum}, ${p.estoque}, '${p.foto || ''}')">Editar</button>
-                                    <button class="btn-excluir" onclick="deletarProduto(${p.id})">Excluir</button>
-                                </div>
-                            </div>
-                        </div>`;
-
-                    pdvLista.innerHTML += `
-                        <div class="pdv-product-card" onclick="selecionarProdutoPDV(${p.id}, '${p.nome}', ${precoNum})">
-                            <img src="${imgUrl}" class="pdv-img">
-                            <div style="flex:1;">
-                                <h4 style="margin:0 0 3px 0; font-size:0.9rem;">${p.nome}</h4>
-                                <p style="margin:0; font-size:0.8rem; color:#64748b;">R$ ${precoNum.toFixed(2)} | Estoque: ${p.estoque}</p>
-                            </div>
-                        </div>`;
-
-                    tabelaFinancasLucro.innerHTML += `
-                        <tr>
-                            <td><img src="${imgUrl}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;"></td>
-                            <td style="font-weight:bold; font-size:0.85rem;">${p.nome}</td>
-                            <td><input type="number" step="0.01" id="custo_${p.id}" value="${custoSalvo}" oninput="atualizarCustoProduto(${p.id}, ${precoNum})" style="width:80px; padding:4px;"></td>
-                            <td>R$ ${precoNum.toFixed(2)}</td>
-                            <td id="lucro_${p.id}" style="color:var(--success); font-weight:bold;">R$ ${lucroUnit.toFixed(2)}</td>
-                            <td id="margem_${p.id}" style="font-weight:bold;">${margem}%</td>
-                        </tr>`;
+                    catalogo.innerHTML += `<div class="product-card"><img src="${img}" class="product-img"><div class="product-info"><div><h4 style="margin:0 0 4px 0;font-size:0.9rem;">${p.nome}</h4><p style="margin:0;color:#64748b;font-size:0.8rem;">R$ ${preco.toFixed(2)} | Estoque: <strong>${p.estoque}</strong></p></div><div style="margin-top:8px;display:flex;gap:4px;"><button class="btn-editar" onclick="prepararEdicaoProduto(${p.id},'${p.nome}',${preco},${p.estoque},'${p.foto || ''}')">Editar</button><button class="btn-excluir" onclick="deletarProduto(${p.id})">Excluir</button></div></div></div>`;
+                    pdvLista.innerHTML += `<div class="pdv-product-card" onclick="selecionarProdutoPDV(${p.id},'${p.nome}',${preco})"><img src="${img}" class="pdv-img"><div style="flex:1;"><h4 style="margin:0 0 3px 0;font-size:0.9rem;">${p.nome}</h4><p style="margin:0;font-size:0.8rem;color:#64748b;">R$ ${preco.toFixed(2)} | Est: ${p.estoque}</p></div></div>`;
+                    tabelaFinancas.innerHTML += `<tr><td><img src="${img}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;"></td><td style="font-weight:bold;font-size:0.85rem;">${p.nome}</td><td><input type="number" step="0.01" id="custo_${p.id}" value="${custo}" oninput="atualizarCustoProduto(${p.id}, ${preco})" style="width:70px;padding:4px;"></td><td>R$ ${preco.toFixed(2)}</td><td id="lucro_${p.id}" style="color:var(--success);font-weight:bold;">R$ ${lucroUnit.toFixed(2)}</td><td id="margem_${p.id}" style="font-weight:bold;">${margem}%</td></tr>`;
                 });
 
-                document.getElementById('statTotalProdutos').innerText = produtosGlobais.length;
-                document.getElementById('statValorEstoque').innerText = `R$ ${valorTotalEstoque.toFixed(2)}`;
+                document.getElementById('statTotalProdutos').innerText = produtosGlobais.length; document.getElementById('statValorEstoque').innerText = `R$ ${valorEstoque.toFixed(2)}`;
 
-                const resCli = await fetch(`${API_URL}/clientes/`);
-                const clientes = await resCli.json();
-                const tabCli = document.getElementById('tabelaClientes');
-                const selectCli = document.getElementById('pedidoCliente');
-                tabCli.innerHTML = '';
-                selectCli.innerHTML = '<option value="">Selecione...</option>';
-
-                clientes.forEach(c => {
-                    tabCli.innerHTML += `<tr>
-                        <td>${c.id}</td>
-                        <td>${c.nome}</td>
-                        <td>${c.telefone || '-'}</td>
-                        <td>
-                            <button class="btn-editar" onclick="prepararEdicaoCliente(${c.id}, '${c.nome}', '${c.telefone || ''}')">Editar</button>
-                            <button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button>
-                        </td>
-                    </tr>`;
-                    selectCli.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+                const tabCli = document.getElementById('tabelaClientes'); const selCli = document.getElementById('pedidoCliente');
+                tabCli.innerHTML = ''; selCli.innerHTML = '<option value="">Selecione...</option>';
+                clientesGlobais.forEach(c => {
+                    tabCli.innerHTML += `<tr><td>${c.id}</td><td>${c.nome}</td><td>${c.telefone || '-'}</td><td><button class="btn-editar" onclick="prepararEdicaoCliente(${c.id},'${c.nome}','${c.telefone || ''}')">Editar</button><button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button></td></tr>`;
+                    selCli.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
                 });
-                document.getElementById('statTotalClientes').innerText = clientes.length;
+                document.getElementById('statTotalClientes').innerText = clientesGlobais.length;
 
-                // Relatório de Vendas com Lucro Total Real
+                // Tabela de Lucro Geral
                 const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
                 const maisVendidos = await resMais.json();
                 maisVendidos.forEach(m => {
                     const prod = produtosGlobais.find(p => p.nome === m.produto);
-                    let custoUnit = prod ? (custosProdutos[prod.id] !== undefined ? custosProdutos[prod.id] : (prod.preco * 0.4)) : 0;
-                    let lucroTotal = (m.total_em_reais) - (custoUnit * m.quantidade_vendida);
-
-                    tabelaRelLucroTotal.innerHTML += `
-                        <tr>
-                            <td>${m.produto}</td>
-                            <td>${m.quantidade_vendida} un</td>
-                            <td>R$ ${m.total_em_reais.toFixed(2)}</td>
-                            <td style="color:var(--success); font-weight:bold;">R$ ${lucroTotal.toFixed(2)}</td>
-                        </tr>`;
-                });
-
-                const resFieis = await fetch(`${API_URL}/relatorios/clientes-fieis`);
-                const clientesFieis = await resFieis.json();
-                clientesFieis.forEach(f => {
-                    tabelaRelClientes.innerHTML += `<tr><td>${f.cliente}</td><td>${f.total_pedidos}</td></tr>`;
+                    const custoUnit = prod ? (custosProdutos[prod.id] !== undefined ? custosProdutos[prod.id] : (prod.preco * 0.4)) : 0;
+                    const lucroTotal = (m.total_em_reais) - (custoUnit * m.quantidade_vendida);
+                    tabelaRelLucro.innerHTML += `<tr><td>${m.produto}</td><td>${m.quantidade_vendida} un</td><td>R$ ${m.total_em_reais.toFixed(2)}</td><td style="color:var(--success);font-weight:bold;">R$ ${lucroTotal.toFixed(2)}</td></tr>`;
                 });
 
                 atualizarGraficosDashboard();
+                if(document.getElementById('page-relatorios').classList.contains('active')) processarRelatoriosMensais();
 
-            } catch (error) {
-                console.error("Erro ao carregar dados:", error);
-            }
+            } catch (e) { console.error(e); }
         }
-
         window.onload = carregarDados;
     </script>
 </body>
