@@ -91,12 +91,14 @@ class PedidoCreate(BaseModel):
     cliente_id: int
     itens: List[ItemPedidoCreate]
 
+# ====== A CORREÇÃO FOI FEITA AQUI ======
 class ItemPedidoResponse(BaseModel):
     produto_id: int
     quantidade: int
-    preco_venda: float
+    preco_venda: Optional[float] = None # <- Adicionado Optional e = None
     class Config:
         from_attributes = True
+# ========================================
 
 class PedidoResponse(BaseModel):
     id: int
