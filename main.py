@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, func
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Text, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
@@ -27,6 +27,10 @@ class Cliente(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(100), nullable=False)
     telefone = Column(String(20), nullable=True)
+    cnpj = Column(String(30), nullable=True)
+    endereco = Column(String(255), nullable=True)
+    cidade = Column(String(100), nullable=True)
+    observacao = Column(Text, nullable=True)
 
 class Pedido(Base):
     __tablename__ = "pedidos"
@@ -50,7 +54,7 @@ class ItemPedido(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# --- SCHEMAS PYDANTIC (Atualizados para V2) ---
+# --- SCHEMAS PYDANTIC ---
 class ProdutoCreate(BaseModel):
     nome: str
     preco: float
@@ -65,6 +69,10 @@ class ProdutoResponse(ProdutoCreate):
 class ClienteCreate(BaseModel):
     nome: str
     telefone: Optional[str] = None
+    cnpj: Optional[str] = None
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    observacao: Optional[str] = None
 
 class ClienteResponse(ClienteCreate):
     id: int
@@ -96,7 +104,7 @@ class PedidoResponse(BaseModel):
         from_attributes = True
 
 # --- INICIALIZAÇÃO FASTAPI ---
-app = FastAPI(title="Congelados e Cia API", version="2.0")
+app = FastAPI(title="Congelados e Cia API", version="2.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -152,7 +160,14 @@ def listar_clientes(db: Session = Depends(get_db)):
 
 @app.post("/clientes/", status_code=status.HTTP_201_CREATED)
 def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
-    novo_cliente = Cliente(nome=cliente.nome, telefone=cliente.telefone)
+    novo_cliente = Cliente(
+        nome=cliente.nome,
+        telefone=cliente.telefone,
+        cnpj=cliente.cnpj,
+        endereco=cliente.endereco,
+        cidade=cliente.cidade,
+        observacao=cliente.observacao
+    )
     db.add(novo_cliente)
     db.commit()
     return {"mensagem": "Cliente cadastrado!"}
@@ -163,6 +178,10 @@ def atualizar_cliente(cliente_id: int, cliente: ClienteCreate, db: Session = Dep
     if not cli_db: raise HTTPException(status_code=404, detail="Cliente não encontrado")
     cli_db.nome = cliente.nome
     cli_db.telefone = cliente.telefone
+    cli_db.cnpj = cliente.cnpj
+    cli_db.endereco = cliente.endereco
+    cli_db.cidade = cliente.cidade
+    cli_db.observacao = cliente.observacao
     db.commit()
     return {"mensagem": "Cliente atualizado!"}
 
@@ -199,7 +218,7 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Pedido realizado!"}
 
-# --- ROTAS DE RELATÓRIOS (Agregados) ---
+# --- ROTAS DE RELATÓRIOS ---
 @app.get("/relatorios/produtos-mais-vendidos")
 def produtos_mais_vendidos(db: Session = Depends(get_db)):
     resultados = db.query(Produto.nome, func.sum(ItemPedido.quantidade).label("quantidade_vendida"), func.sum(ItemPedido.quantidade * ItemPedido.preco_venda).label("total_em_reais")).join(ItemPedido, Produto.id == ItemPedido.produto_id).group_by(Produto.id, Produto.nome).all()

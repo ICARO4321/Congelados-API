@@ -19,9 +19,7 @@
             --sidebar-width: 260px;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -34,13 +32,8 @@
             overflow-x: hidden;
         }
 
-        @media (min-width: 768px) {
-            body {
-                flex-direction: row;
-            }
-        }
+        @media (min-width: 768px) { body { flex-direction: row; } }
 
-        /* MENU LATERAL MOBILE FIRST */
         aside {
             width: var(--sidebar-width);
             background-color: #0f172a;
@@ -56,416 +49,77 @@
             box-shadow: 4px 0 15px rgba(0,0,0,0.3);
         }
 
-        aside.open {
-            left: 0;
-        }
+        aside.open { left: 0; }
 
-        .sidebar-header {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid #1e293b;
-        }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1e293b; }
+        .logo-img { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 6px; }
+        .sidebar-header h2 { font-size: 0.9rem; margin: 0; color: #f8fafc; }
 
-        .logo-img {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--primary);
-            margin-bottom: 6px;
-        }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .sidebar-menu li { padding: 15px 20px; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.2s, color 0.2s; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background-color: #1e293b; color: #fff; border-left: 4px solid var(--primary); }
 
-        .sidebar-header h2 {
-            font-size: 0.9rem;
-            margin: 0;
-            color: #f8fafc;
-        }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1050; backdrop-filter: blur(2px); opacity: 0; transition: opacity 0.3s ease; }
+        .sidebar-overlay.active { display: block; opacity: 1; }
 
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        .main-content { flex: 1; width: 100%; padding: 12px; box-sizing: border-box; max-width: 100vw; }
+        @media (min-width: 768px) { aside { left: 0; box-shadow: none; } .main-content { margin-left: var(--sidebar-width); padding: 24px; } .sidebar-overlay { display: none !important; } }
 
-        .sidebar-menu li {
-            padding: 15px 20px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #94a3b8;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            transition: background 0.2s, color 0.2s;
-        }
+        .topbar { display: flex; align-items: center; background: var(--card-bg); padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+        .menu-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color); margin-right: 12px; padding: 4px; display: flex; align-items: center; line-height: 1; }
+        @media (min-width: 768px) { .menu-toggle { display: none; } }
+        .topbar h1 { font-size: 1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1e293b; }
 
-        .sidebar-menu li:hover, .sidebar-menu li.active {
-            background-color: #1e293b;
-            color: #fff;
-            border-left: 4px solid var(--primary);
-        }
+        .page { display: none; }
+        .page.active { display: block; }
 
-        /* OVERLAY MOBILE */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 1050;
-            backdrop-filter: blur(2px);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .sidebar-overlay.active {
-            display: block;
-            opacity: 1;
-        }
+        .card { background-color: var(--card-bg); border-radius: 10px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); border: 1px solid var(--border-color); }
+        @media (min-width: 768px) { .card { padding: 20px; margin-bottom: 20px; } }
+        h2.section-title { font-size: 1rem; margin-top: 0; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; color: #334155; margin-bottom: 12px; }
 
-        /* CONTEÚDO PRINCIPAL */
-        .main-content {
-            flex: 1;
-            width: 100%;
-            padding: 12px;
-            box-sizing: border-box;
-            max-width: 100vw;
-        }
+        .stats-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+        @media (min-width: 500px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        .stat-card { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .stat-card h3 { margin: 0 0 4px 0; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card p { margin: 0; font-size: 1.2rem; font-weight: bold; color: var(--text-color); }
 
-        @media (min-width: 768px) {
-            aside {
-                left: 0;
-                box-shadow: none;
-            }
-            .main-content {
-                margin-left: var(--sidebar-width);
-                padding: 24px;
-            }
-            .sidebar-overlay {
-                display: none !important;
-            }
-        }
+        .charts-row { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+        @media (min-width: 900px) { .charts-row { grid-template-columns: 1fr 1fr; } }
+        .chart-container { position: relative; height: 230px; width: 100%; }
+        @media (min-width: 768px) { .chart-container { height: 270px; } }
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 10px 14px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid var(--border-color);
-        }
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+        @media (min-width: 600px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: 1 / -1; }
 
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-color);
-            margin-right: 12px;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            line-height: 1;
-        }
+        label { font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; color: #475569; }
+        input, select, textarea { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; background-color: #fff; width: 100%; box-sizing: border-box; outline: none; transition: border-color 0.2s; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
-        @media (min-width: 768px) {
-            .menu-toggle {
-                display: none;
-            }
-        }
+        button { background-color: var(--primary); color: white; border: none; padding: 12px 15px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: background-color 0.2s; display: inline-flex; justify-content: center; align-items: center; }
+        @media (min-width: 600px) { button { width: auto; } }
+        button:hover { background-color: var(--primary-dark); }
+        button.btn-excluir { background-color: var(--danger); padding: 6px 10px; font-size: 0.75rem; width: auto; }
+        button.btn-editar { background-color: #0ea5e9; padding: 6px 10px; font-size: 0.75rem; margin-right: 4px; width: auto; }
 
-        .topbar h1 {
-            font-size: 1rem;
-            margin: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #1e293b;
-        }
+        .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        @media (min-width: 600px) { .products-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
+        .product-card { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+        .product-img { width: 100%; height: 100px; object-fit: cover; background-color: #e2e8f0; }
+        @media (min-width: 768px) { .product-img { height: 130px; } }
+        .product-info { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
 
-        .page {
-            display: none;
-        }
+        .pdv-container { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 900px) { .pdv-container { grid-template-columns: 1fr 340px; } }
+        .pdv-product-card { background: #fff; border: 2px solid var(--border-color); border-radius: 8px; padding: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s; }
+        .pdv-product-card:hover, .pdv-product-card.selected { border-color: var(--primary); background-color: #fff7ed; }
+        .pdv-img { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
 
-        .page.active {
-            display: block;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-            border: 1px solid var(--border-color);
-        }
-
-        @media (min-width: 768px) {
-            .card {
-                padding: 20px;
-                margin-bottom: 20px;
-            }
-        }
-
-        h2.section-title {
-            font-size: 1rem;
-            margin-top: 0;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 8px;
-            color: #334155;
-            margin-bottom: 12px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        @media (min-width: 500px) {
-            .stats-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        .stat-card {
-            background: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .stat-card h3 {
-            margin: 0 0 4px 0;
-            font-size: 0.7rem;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-card p {
-            margin: 0;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-
-        .charts-row {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        @media (min-width: 900px) {
-            .charts-row {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .chart-container {
-            position: relative;
-            height: 230px;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 270px;
-            }
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        @media (min-width: 600px) {
-            .form-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #475569;
-        }
-
-        input, select {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.9rem;
-            background-color: #fff;
-            width: 100%;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
-        }
-
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 15px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.2s;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        @media (min-width: 600px) {
-            button {
-                width: auto;
-            }
-        }
-
-        button:hover {
-            background-color: var(--primary-dark);
-        }
-
-        button.btn-excluir {
-            background-color: var(--danger);
-            padding: 6px 10px;
-            font-size: 0.75rem;
-            width: auto;
-        }
-
-        button.btn-editar {
-            background-color: #0ea5e9;
-            padding: 6px 10px;
-            font-size: 0.75rem;
-            margin-right: 4px;
-            width: auto;
-        }
-
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        @media (min-width: 600px) {
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            }
-        }
-
-        .product-card {
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .product-img {
-            width: 100%;
-            height: 100px;
-            object-fit: cover;
-            background-color: #e2e8f0;
-        }
-
-        @media (min-width: 768px) {
-            .product-img {
-                height: 130px;
-            }
-        }
-
-        .product-info {
-            padding: 8px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .pdv-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        @media (min-width: 900px) {
-            .pdv-container {
-                grid-template-columns: 1fr 340px;
-            }
-        }
-
-        .pdv-product-card {
-            background: #fff;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .pdv-product-card:hover, .pdv-product-card.selected {
-            border-color: var(--primary);
-            background-color: #fff7ed;
-        }
-
-        .pdv-img {
-            width: 45px;
-            height: 45px;
-            border-radius: 6px;
-            object-fit: cover;
-            flex-shrink: 0;
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-top: 4px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 420px;
-        }
-
-        th, td {
-            padding: 9px 10px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.8rem;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-
-        th {
-            background-color: #f8fafc;
-            font-weight: 600;
-            color: #475569;
-        }
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.8rem; vertical-align: middle; white-space: nowrap; }
+        th { background-color: #f8fafc; font-weight: 600; color: #475569; }
     </style>
 </head>
 <body>
@@ -543,10 +197,14 @@
                 <h2 class="section-title" id="formClienteTitulo">Cadastrar Novo Cliente</h2>
                 <input type="hidden" id="cliEditId">
                 <div class="form-grid">
-                    <div class="form-group"><label>Nome do Cliente</label><input type="text" id="cliNome" placeholder="Ex: João Silva"></div>
-                    <div class="form-group"><label>Telefone</label><input type="text" id="cliTelefone" placeholder="(00) 00000-0000"></div>
+                    <div class="form-group"><label>Nome do Cliente / Empresa</label><input type="text" id="cliNome" placeholder="Ex: Mercado Bom Preço"></div>
+                    <div class="form-group"><label>CNPJ / CPF</label><input type="text" id="cliCnpj" placeholder="00.000.000/0001-00"></div>
+                    <div class="form-group"><label>Telefone / WhatsApp</label><input type="text" id="cliTelefone" placeholder="(35) 99999-9999"></div>
+                    <div class="form-group"><label>Cidade</label><input type="text" id="cliCidade" placeholder="Ex: Passos - MG"></div>
+                    <div class="form-group full-width"><label>Endereço Completo</label><input type="text" id="cliEndereco" placeholder="Rua, Número, Bairro"></div>
+                    <div class="form-group full-width"><label>Observações</label><textarea id="cliObs" rows="2" placeholder="Ex: Entregar somente pela manhã. Prefere pagamento via Pix."></textarea></div>
                 </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
                     <button onclick="salvarCliente()">Salvar Cliente</button>
                     <button id="btnCancelarCli" onclick="limparFormularioCliente()" style="background-color: #64748b; display:none;">Cancelar</button>
                 </div>
@@ -554,7 +212,12 @@
             <div class="card">
                 <h2 class="section-title">Clientes Cadastrados</h2>
                 <div class="table-responsive">
-                    <table><thead><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="tabelaClientes"></tbody></table>
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Nome</th><th>CNPJ</th><th>Telefone</th><th>Cidade</th><th>Endereço</th><th>Obs</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="tabelaClientes"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -708,7 +371,6 @@
             const titulos = { 'dashboard': 'Dashboard Analítico', 'produtos': 'Produtos & Estoque', 'clientes': 'Gestão de Clientes', 'pedidos': 'Registrar Pedido (PDV)', 'financas': 'Finanças & Lucro', 'relatorios': 'Relatórios Gerenciais BI' };
             document.getElementById('page-title').innerText = titulos[paginaId];
 
-            // Fecha o menu gaveta ao navegar no celular
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('sidebarOverlay').classList.remove('active');
 
@@ -753,18 +415,52 @@
 
         async function salvarCliente() {
             const id = document.getElementById('cliEditId').value;
-            const payload = { nome: document.getElementById('cliNome').value, telefone: document.getElementById('cliTelefone').value };
-            if (!payload.nome) return alert("Preencha o nome.");
-            const response = await fetch(id ? `${API_URL}/clientes/${id}` : `${API_URL}/clientes/`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (response.ok) { alert("Sucesso!"); limparFormularioCliente(); carregarDados(); }
+            const payload = {
+                nome: document.getElementById('cliNome').value,
+                cnpj: document.getElementById('cliCnpj').value,
+                telefone: document.getElementById('cliTelefone').value,
+                cidade: document.getElementById('cliCidade').value,
+                endereco: document.getElementById('cliEndereco').value,
+                observacao: document.getElementById('cliObs').value
+            };
+            if (!payload.nome) return alert("Preencha o nome do cliente.");
+
+            const response = await fetch(id ? `${API_URL}/clientes/${id}` : `${API_URL}/clientes/`, {
+                method: id ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("Cliente salvo com sucesso!");
+                limparFormularioCliente();
+                carregarDados();
+            }
         }
 
-        function prepararEdicaoCliente(id, nome, telefone) {
-            document.getElementById('cliEditId').value = id; document.getElementById('cliNome').value = nome; document.getElementById('cliTelefone').value = telefone; document.getElementById('formClienteTitulo').innerText = "Editar Cliente"; document.getElementById('btnCancelarCli').style.display = "inline-block"; mudarPagina('clientes');
+        function prepararEdicaoCliente(id, nome, cnpj, telefone, cidade, endereco, obs) {
+            document.getElementById('cliEditId').value = id;
+            document.getElementById('cliNome').value = nome || '';
+            document.getElementById('cliCnpj').value = cnpj || '';
+            document.getElementById('cliTelefone').value = telefone || '';
+            document.getElementById('cliCidade').value = cidade || '';
+            document.getElementById('cliEndereco').value = endereco || '';
+            document.getElementById('cliObs').value = obs || '';
+            document.getElementById('formClienteTitulo').innerText = "Editar Cliente";
+            document.getElementById('btnCancelarCli').style.display = "inline-block";
+            mudarPagina('clientes');
         }
 
         function limparFormularioCliente() {
-            document.getElementById('cliEditId').value = ''; document.getElementById('cliNome').value = ''; document.getElementById('cliTelefone').value = ''; document.getElementById('formClienteTitulo').innerText = "Cadastrar Novo Cliente"; document.getElementById('btnCancelarCli').style.display = "none";
+            document.getElementById('cliEditId').value = '';
+            document.getElementById('cliNome').value = '';
+            document.getElementById('cliCnpj').value = '';
+            document.getElementById('cliTelefone').value = '';
+            document.getElementById('cliCidade').value = '';
+            document.getElementById('cliEndereco').value = '';
+            document.getElementById('cliObs').value = '';
+            document.getElementById('formClienteTitulo').innerText = "Cadastrar Novo Cliente";
+            document.getElementById('btnCancelarCli').style.display = "none";
         }
 
         function atualizarCustoProduto(prodId, precoVenda) {
@@ -1006,7 +702,19 @@
                 const tabCli = document.getElementById('tabelaClientes'); const selCli = document.getElementById('pedidoCliente');
                 tabCli.innerHTML = ''; selCli.innerHTML = '<option value="">Selecione...</option>';
                 clientesGlobais.forEach(c => {
-                    tabCli.innerHTML += `<tr><td>${c.id}</td><td>${c.nome}</td><td>${c.telefone || '-'}</td><td><button class="btn-editar" onclick="prepararEdicaoCliente(${c.id},'${c.nome}','${c.telefone || ''}')">Editar</button><button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button></td></tr>`;
+                    tabCli.innerHTML += `<tr>
+                        <td>${c.id}</td>
+                        <td style="font-weight:bold;">${c.nome}</td>
+                        <td>${c.cnpj || '-'}</td>
+                        <td>${c.telefone || '-'}</td>
+                        <td>${c.cidade || '-'}</td>
+                        <td>${c.endereco || '-'}</td>
+                        <td>${c.observacao || '-'}</td>
+                        <td>
+                            <button class="btn-editar" onclick="prepararEdicaoCliente(${c.id}, '${c.nome}', '${c.cnpj || ''}', '${c.telefone || ''}', '${c.cidade || ''}', '${c.endereco || ''}', '${c.observacao || ''}')">Editar</button>
+                            <button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button>
+                        </td>
+                    </tr>`;
                     selCli.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
                 });
                 document.getElementById('statTotalClientes').innerText = clientesGlobais.length;
