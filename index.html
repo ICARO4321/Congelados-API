@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Congelados e Cia - Gestão</title>
+    <title>Congelados e Cia - Gestão & BI</title>
+    <!-- Importando Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #ea580c;
             --primary-dark: #c2410c;
-            --bg-color: #f8fafc;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
             --text-color: #1e293b;
             --border-color: #e2e8f0;
+            --success: #16a34a;
             --danger: #dc3545;
-            --danger-hover: #c82333;
+            --sidebar-width: 260px;
         }
 
         body {
@@ -21,58 +24,251 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 10px;
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
+        @media (min-width: 768px) {
+            body {
+                flex-direction: row;
+            }
         }
 
-        header {
+        aside {
+            width: var(--sidebar-width);
+            background-color: #0f172a;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            left: -var(--sidebar-width);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            top: 0;
+        }
+
+        aside.open {
+            left: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
             text-align: center;
-            margin-bottom: 30px;
+            border-bottom: 1px solid #1e293b;
         }
 
         .logo-img {
-            width: 120px;
-            height: 120px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--primary);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
+            border: 2px solid var(--primary);
+            margin-bottom: 8px;
         }
 
-        header h1 {
-            color: var(--primary-dark);
-            margin: 5px 0;
-            font-size: 1.8rem;
+        .sidebar-header h2 {
+            font-size: 0.95rem;
+            margin: 0;
+            color: #f8fafc;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-menu li {
+            padding: 14px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+
+        .sidebar-menu li:hover, .sidebar-menu li.active {
+            background-color: #1e293b;
+            color: #fff;
+            border-left: 4px solid var(--primary);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        .main-content {
+            flex: 1;
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 768px) {
+            aside {
+                left: 0;
+            }
+            .main-content {
+                margin-left: var(--sidebar-width);
+                padding: 25px;
+            }
+            .sidebar-overlay {
+                display: none !important;
+            }
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid var(--border-color);
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: var(--text-color);
+            margin-right: 12px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .menu-toggle {
+                display: none;
+            }
+        }
+
+        .topbar h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
         }
 
         .card {
             background-color: var(--card-bg);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
             border: 1px solid var(--border-color);
-            box-sizing: border-box;
         }
 
-        h2 {
-            font-size: 1.25rem;
+        @media (min-width: 768px) {
+            .card {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+        }
+
+        h2.section-title {
+            font-size: 1.05rem;
             margin-top: 0;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 8px;
             color: #334155;
+            margin-bottom: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 500px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .stat-card p {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 900px) {
+            .charts-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 260px;
+            }
         }
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        @media (min-width: 600px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .form-group {
@@ -81,16 +277,16 @@
         }
 
         label {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         input, select {
-            padding: 12px;
+            padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             background-color: #fff;
             width: 100%;
             box-sizing: border-box;
@@ -100,13 +296,19 @@
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 12px 20px;
-            font-size: 1rem;
+            padding: 12px 15px;
+            font-size: 0.95rem;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.2s;
             width: 100%;
+            transition: background-color 0.2s;
+        }
+
+        @media (min-width: 600px) {
+            button {
+                width: auto;
+            }
         }
 
         button:hover {
@@ -115,12 +317,93 @@
 
         button.btn-excluir {
             background-color: var(--danger);
-            padding: 6px 12px;
-            width: auto;
-            font-size: 0.85rem;
+            padding: 6px 10px;
+            font-size: 0.75rem;
         }
-        button.btn-excluir:hover {
-            background-color: var(--danger-hover);
+
+        button.btn-editar {
+            background-color: #0ea5e9;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            margin-right: 4px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        @media (min-width: 600px) {
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            }
+        }
+
+        .product-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            background-color: #e2e8f0;
+        }
+
+        .product-info {
+            padding: 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .pdv-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 900px) {
+            .pdv-container {
+                grid-template-columns: 1fr 340px;
+            }
+        }
+
+        .pdv-product-card {
+            background: #fff;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pdv-product-card:hover {
+            border-color: var(--primary);
+            background-color: #fff7ed;
+        }
+
+        .pdv-product-card.selected {
+            border-color: var(--primary);
+            background-color: #ffedd5;
+        }
+
+        .pdv-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            object-fit: cover;
         }
 
         .table-responsive {
@@ -132,348 +415,652 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            min-width: 450px;
+            margin-top: 8px;
+            min-width: 400px;
         }
 
         th, td {
-            padding: 12px;
+            padding: 10px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
-            font-size: 0.95rem;
+            font-size: 0.85rem;
+            vertical-align: middle;
         }
 
         th {
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             font-weight: 600;
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding: 5px;
-            }
-            .card {
-                padding: 12px;
-            }
-            header h1 {
-                font-size: 1.4rem;
-            }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <img src="fotos/logo.jpg" alt="Logo Congelados e Cia" class="logo-img">
-            <h1>Congelados & Cia</h1>
-            <p>Seu dia a dia mais prático e delicioso</p>
-        </header>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-        <!-- CADASTRO DE PRODUTOS -->
-        <div class="card">
-            <h2>Cadastrar Novo Produto</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Nome do Produto</label>
-                    <input type="text" id="prodNome" placeholder="Ex: Coxinha">
-                </div>
-                <div class="form-group">
-                    <label>Preço (R$)</label>
-                    <input type="number" step="0.01" id="prodPreco" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label>Estoque Inicial</label>
-                    <input type="number" id="prodEstoque" placeholder="0">
-                </div>
-            </div>
-            <button onclick="cadastrarProduto()">Salvar Produto</button>
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <img src="fotos/logo.jpg" alt="Logo" class="logo-img">
+            <h2>Congelados & Cia</h2>
+        </div>
+        <ul class="sidebar-menu">
+            <li onclick="mudarPagina('dashboard')" id="menu-dashboard" class="active">📊 Dashboard Analítico</li>
+            <li onclick="mudarPagina('produtos')" id="menu-produtos">📦 Produtos & Estoque</li>
+            <li onclick="mudarPagina('clientes')" id="menu-clientes">👥 Clientes</li>
+            <li onclick="mudarPagina('pedidos')" id="menu-pedidos">🛒 Registrar Pedido</li>
+            <li onclick="mudarPagina('financas')" id="menu-financas">💰 Finanças & Lucro</li>
+            <li onclick="mudarPagina('relatorios')" id="menu-relatorios">📈 Relatórios BI</li>
+        </ul>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <h1 id="page-title">Dashboard Analítico</h1>
         </div>
 
-        <!-- CADASTRO DE CLIENTES -->
-        <div class="card">
-            <h2>Cadastrar Novo Cliente</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Nome do Cliente</label>
-                    <input type="text" id="cliNome" placeholder="Ex: Maria Silva">
+        <!-- TELA 1: DASHBOARD -->
+        <div id="page-dashboard" class="page active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total de Produtos</h3>
+                    <p id="statTotalProdutos">0</p>
                 </div>
-                <div class="form-group">
-                    <label>Telefone</label>
-                    <input type="text" id="cliTelefone" placeholder="(35) 99999-9999">
+                <div class="stat-card">
+                    <h3>Clientes Cadastrados</h3>
+                    <p id="statTotalClientes">0</p>
                 </div>
-            </div>
-            <button onclick="cadastrarCliente()">Salvar Cliente</button>
-        </div>
-
-        <!-- NOVO PEDIDO -->
-        <div class="card">
-            <h2>Registrar Pedido</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Selecionar Cliente</label>
-                    <select id="pedidoCliente">
-                        <option value="">Carregando clientes...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Selecionar Produto</label>
-                    <select id="pedidoProduto">
-                        <option value="">Carregando produtos...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Quantidade</label>
-                    <input type="number" id="pedidoQtd" value="1" min="1">
+                <div class="stat-card">
+                    <h3>Valor Imobilizado</h3>
+                    <p id="statValorEstoque">R$ 0,00</p>
                 </div>
             </div>
-            <button onclick="criarPedido()" style="background-color: #16a34a;">Finalizar Pedido e Baixar Estoque</button>
-        </div>
 
-        <!-- LISTAGENS -->
-        <div class="card">
-            <h2>Produtos em Estoque</h2>
-            <button onclick="carregarDados()" style="margin-bottom: 10px; background-color: #0ea5e9; width: auto;">Atualizar Dados</button>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr><th>ID</th><th>Nome</th><th>Preço (R$)</th><th>Estoque</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody id="tabelaProdutos"></tbody>
-                </table>
+            <div class="charts-row">
+                <div class="card" style="margin-bottom:0;">
+                    <h2 class="section-title">Desempenho de Vendas</h2>
+                    <div class="chart-container"><canvas id="graficoVendas"></canvas></div>
+                </div>
+                <div class="card" style="margin-bottom:0;">
+                    <h2 class="section-title">Distribuição de Estoque</h2>
+                    <div class="chart-container"><canvas id="graficoEstoque"></canvas></div>
+                </div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>Clientes Cadastrados</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody id="tabelaClientes"></tbody>
-                </table>
+        <!-- TELA 2: PRODUTOS & ESTOQUE -->
+        <div id="page-produtos" class="page">
+            <div class="card">
+                <h2 class="section-title" id="formProdutoTitulo">Cadastrar Novo Produto com Foto</h2>
+                <input type="hidden" id="prodEditId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nome do Produto</label>
+                        <input type="text" id="prodNome" placeholder="Ex: Coxinha de Frango">
+                    </div>
+                    <div class="form-group">
+                        <label>Preço de Venda (R$)</label>
+                        <input type="number" step="0.01" id="prodPreco" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Estoque Inicial</label>
+                        <input type="number" id="prodEstoque" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Upload de Foto</label>
+                        <input type="file" id="prodFotoFile" accept="image/*" onchange="converterImagem(event)">
+                    </div>
+                </div>
+                <input type="hidden" id="prodFotoBase64">
+                <div style="margin-bottom: 12px;">
+                    <img id="previewFoto" src="" alt="Prévia" style="max-width: 80px; max-height: 80px; display:none; border-radius: 6px; border: 1px solid var(--border-color);">
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="salvarProduto()">Salvar Produto</button>
+                    <button id="btnCancelarProd" onclick="limparFormularioProduto()" style="background-color: #64748b; display:none;">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">Catálogo de Produtos</h2>
+                <button onclick="carregarDados()" style="margin-bottom: 12px; background-color: #0ea5e9;">Atualizar Dados</button>
+                <div id="catalogoProdutos" class="products-grid"></div>
             </div>
         </div>
 
-        <!-- RELATÓRIOS -->
-        <div class="card">
-            <h2>Relatório: Produtos Mais Vendidos (Em Reais)</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr><th>Produto</th><th>Qtd Vendida</th><th>Total em Reais</th></tr>
-                    </thead>
-                    <tbody id="tabelaMaisVendidos"></tbody>
-                </table>
+        <!-- TELA 3: CLIENTES -->
+        <div id="page-clientes" class="page">
+            <div class="card">
+                <h2 class="section-title" id="formClienteTitulo">Cadastrar Novo Cliente</h2>
+                <input type="hidden" id="cliEditId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nome do Cliente</label>
+                        <input type="text" id="cliNome" placeholder="Ex: Maria Silva">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone</label>
+                        <input type="text" id="cliTelefone" placeholder="(35) 99999-9999">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="salvarCliente()">Salvar Cliente</button>
+                    <button id="btnCancelarCli" onclick="limparFormularioCliente()" style="background-color: #64748b; display:none;">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">Clientes Cadastrados</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="tabelaClientes"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>Relatório: Clientes Mais Fiéis</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr><th>Cliente</th><th>Total de Pedidos</th></tr>
-                    </thead>
-                    <tbody id="tabelaClientesFieis"></tbody>
-                </table>
+        <!-- TELA 4: REGISTRAR PEDIDO -->
+        <div id="page-pedidos" class="page">
+            <div class="pdv-container">
+                <div class="card" style="margin-bottom:0;">
+                    <h2 class="section-title">Selecione o Produto</h2>
+                    <div id="pdvListaProdutos" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto;"></div>
+                </div>
+
+                <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                        <h2 class="section-title">Finalizar Venda</h2>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>Cliente</label>
+                            <select id="pedidoCliente"><option value="">Selecione...</option></select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>Produto Escolhido</label>
+                            <input type="text" id="pdvProdutoSelecionadoNome" readonly value="Nenhum selecionado" style="background: #f8fafc; font-weight:bold;">
+                            <input type="hidden" id="pedidoProdutoId">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>Quantidade</label>
+                            <input type="number" id="pedidoQtd" value="1" min="1" oninput="atualizarTotalPDV()">
+                        </div>
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <p style="margin:0; font-size:0.85rem; color:#64748b;">Total do Pedido:</p>
+                            <p id="pdvTotalPreco" style="margin:4px 0 0 0; font-size:1.25rem; font-weight:bold; color:var(--primary);">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <button onclick="criarPedido()" style="background-color: var(--success); width:100%;">Concluir Venda</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 5: FINANÇAS & LUCRO -->
+        <div id="page-financas" class="page">
+            <div class="card">
+                <h2 class="section-title">Calculadora de Custo, Preço de Venda e Lucratividade</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>Produto</th>
+                                <th>Custo (R$)</th>
+                                <th>Venda (R$)</th>
+                                <th>Lucro Unit.</th>
+                                <th>Margem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaFinancasLucro"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 6: RELATÓRIOS BI COM LUCRO TOTAL E GRÁFICO COMPARATIVO -->
+        <div id="page-relatorios" class="page">
+            <div class="card">
+                <h2 class="section-title">📈 Faturamento vs. Lucro Total por Produto</h2>
+                <div class="chart-container" style="height: 300px;"><canvas id="graficoComparativoLucro"></canvas></div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">📦 Relatório de Vendas e Lucro Real</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Produto</th><th>Qtd Vendida</th><th>Faturamento Total</th><th>Lucro Total Gerado</th></tr>
+                        </thead>
+                        <tbody id="tabelaRelatorioLucroTotal"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">👥 Clientes Fiéis</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Cliente</th><th>Total de Pedidos</th></tr>
+                        </thead>
+                        <tbody id="tabelaRelatorioClientes"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const API_URL = "https://congelados-api.onrender.com";
+        let chartVendasInstance = null;
+        let chartEstoqueInstance = null;
+        let chartComparativoInstance = null;
+        
+        let produtosGlobais = [];
+        let custosProdutos = JSON.parse(localStorage.getItem('congelados_custos') || '{}');
 
-        async function cadastrarProduto() {
-            const nome = document.getElementById('prodNome').value;
-            const preco = parseFloat(document.getElementById('prodPreco').value);
-            const estoque = parseInt(document.getElementById('prodEstoque').value);
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
 
-            if (!nome || isNaN(preco) || isNaN(estoque)) {
-                alert("Preencha todos os campos do produto corretamente.");
-                return;
+        function mudarPagina(paginaId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu li').forEach(m => m.classList.remove('active'));
+
+            document.getElementById(`page-${paginaId}`).classList.add('active');
+            document.getElementById(`menu-${paginaId}`).classList.add('active');
+
+            const titulos = {
+                'dashboard': 'Dashboard Analítico',
+                'produtos': 'Produtos & Estoque',
+                'clientes': 'Gestão de Clientes',
+                'pedidos': 'Registrar Pedido (PDV)',
+                'financas': 'Finanças & Lucro',
+                'relatorios': 'Relatórios Gerenciais BI'
+            };
+            document.getElementById('page-title').innerText = titulos[paginaId];
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
             }
 
-            try {
-                const response = await fetch(`${API_URL}/produtos/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, preco, estoque })
-                });
-
-                if (response.ok) {
-                    alert("Produto cadastrado com sucesso!");
-                    document.getElementById('prodNome').value = '';
-                    document.getElementById('prodPreco').value = '';
-                    document.getElementById('prodEstoque').value = '';
-                    carregarDados();
-                } else {
-                    alert("Erro ao cadastrar produto.");
-                }
-            } catch (e) {
-                alert("Falha de conexão com a API.");
+            if(paginaId === 'dashboard') {
+                atualizarGraficosDashboard();
+            } else if(paginaId === 'relatorios') {
+                atualizarGraficoComparativo();
             }
         }
 
-        async function cadastrarCliente() {
-            const nome = document.getElementById('cliNome').value;
-            const telefone = document.getElementById('cliTelefone').value;
+        function converterImagem(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64String = e.target.result;
+                    document.getElementById('prodFotoBase64').value = base64String;
+                    const preview = document.getElementById('previewFoto');
+                    preview.src = base64String;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
 
-            if (!nome) {
-                alert("Preencha o nome do cliente.");
+        async function salvarProduto() {
+            const id = document.getElementById('prodEditId').value;
+            const nome = document.getElementById('prodNome').value;
+            const preco = parseFloat(document.getElementById('prodPreco').value);
+            const estoque = parseInt(document.getElementById('prodEstoque').value);
+            const foto = document.getElementById('prodFotoBase64').value;
+
+            if (!nome || isNaN(preco) || isNaN(estoque)) {
+                alert("Preencha os campos obrigatórios.");
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_URL}/clientes/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, telefone })
-                });
+            const response = await fetch(id ? `${API_URL}/produtos/${id}` : `${API_URL}/produtos/`, {
+                method: id ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, preco, estoque, foto })
+            });
 
-                if (response.ok) {
-                    alert("Cliente cadastrado com sucesso!");
-                    document.getElementById('cliNome').value = '';
-                    document.getElementById('cliTelefone').value = '';
-                    carregarDados();
-                } else {
-                    alert("Erro ao cadastrar cliente.");
-                }
-            } catch (e) {
-                alert("Falha de conexão com a API.");
+            if (response.ok) {
+                alert(id ? "Produto atualizado!" : "Produto cadastrado!");
+                limparFormularioProduto();
+                carregarDados();
+            }
+        }
+
+        function prepararEdicaoProduto(id, nome, preco, estoque, foto) {
+            document.getElementById('prodEditId').value = id;
+            document.getElementById('prodNome').value = nome;
+            document.getElementById('prodPreco').value = preco;
+            document.getElementById('prodEstoque').value = estoque;
+            document.getElementById('prodFotoBase64').value = foto || '';
+            if(foto) {
+                const preview = document.getElementById('previewFoto');
+                preview.src = foto;
+                preview.style.display = 'block';
+            }
+            document.getElementById('formProdutoTitulo').innerText = "Editar Produto";
+            document.getElementById('btnCancelarProd').style.display = "inline-block";
+            mudarPagina('produtos');
+        }
+
+        function limparFormularioProduto() {
+            document.getElementById('prodEditId').value = '';
+            document.getElementById('prodNome').value = '';
+            document.getElementById('prodPreco').value = '';
+            document.getElementById('prodEstoque').value = '';
+            document.getElementById('prodFotoFile').value = '';
+            document.getElementById('prodFotoBase64').value = '';
+            document.getElementById('previewFoto').style.display = 'none';
+            document.getElementById('formProdutoTitulo').innerText = "Cadastrar Novo Produto com Foto";
+            document.getElementById('btnCancelarProd').style.display = "none";
+        }
+
+        async function salvarCliente() {
+            const id = document.getElementById('cliEditId').value;
+            const nome = document.getElementById('cliNome').value;
+            const telefone = document.getElementById('cliTelefone').value;
+
+            if (!nome) { alert("Preencha o nome."); return; }
+
+            const response = await fetch(id ? `${API_URL}/clientes/${id}` : `${API_URL}/clientes/`, {
+                method: id ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, telefone })
+            });
+
+            if (response.ok) {
+                alert("Salvo com sucesso!");
+                limparFormularioCliente();
+                carregarDados();
+            }
+        }
+
+        function prepararEdicaoCliente(id, nome, telefone) {
+            document.getElementById('cliEditId').value = id;
+            document.getElementById('cliNome').value = nome;
+            document.getElementById('cliTelefone').value = telefone;
+            document.getElementById('formClienteTitulo').innerText = "Editar Cliente";
+            document.getElementById('btnCancelarCli').style.display = "inline-block";
+            mudarPagina('clientes');
+        }
+
+        function limparFormularioCliente() {
+            document.getElementById('cliEditId').value = '';
+            document.getElementById('cliNome').value = '';
+            document.getElementById('cliTelefone').value = '';
+            document.getElementById('formClienteTitulo').innerText = "Cadastrar Novo Cliente";
+            document.getElementById('btnCancelarCli').style.display = "none";
+        }
+
+        function atualizarCustoProduto(prodId, precoVenda) {
+            const inputCusto = document.getElementById(`custo_${prodId}`);
+            const custo = parseFloat(inputCusto.value) || 0;
+            custosProdutos[prodId] = custo;
+            localStorage.setItem('congelados_custos', JSON.stringify(custosProdutos));
+
+            const lucroUnit = precoVenda - custo;
+            const margem = precoVenda > 0 ? ((lucroUnit / precoVenda) * 100).toFixed(1) : 0;
+
+            document.getElementById(`lucro_${prodId}`).innerText = `R$ ${lucroUnit.toFixed(2)}`;
+            document.getElementById(`margem_${prodId}`).innerText = `${margem}%`;
+        }
+
+        function selecionarProdutoPDV(id, nome, preco) {
+            document.getElementById('pedidoProdutoId').value = id;
+            document.getElementById('pdvProdutoSelecionadoNome').value = `${nome} (R$ ${preco.toFixed(2)})`;
+            atualizarTotalPDV();
+
+            document.querySelectorAll('.pdv-product-card').forEach(card => card.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+        }
+
+        function atualizarTotalPDV() {
+            const prodId = document.getElementById('pedidoProdutoId').value;
+            const qtd = parseInt(document.getElementById('pedidoQtd').value) || 1;
+            if(!prodId) { document.getElementById('pdvTotalPreco').innerText = "R$ 0,00"; return; }
+            const produto = produtosGlobais.find(p => p.id == prodId);
+            if(produto) {
+                document.getElementById('pdvTotalPreco').innerText = `R$ ${(produto.preco * qtd).toFixed(2)}`;
             }
         }
 
         async function criarPedido() {
             const cliente_id = parseInt(document.getElementById('pedidoCliente').value);
-            const produto_id = parseInt(document.getElementById('pedidoProduto').value);
+            const produto_id = parseInt(document.getElementById('pedidoProdutoId').value);
             const quantidade = parseInt(document.getElementById('pedidoQtd').value);
 
             if (!cliente_id || !produto_id || isNaN(quantidade)) {
-                alert("Selecione um cliente, um produto e informe a quantidade.");
+                alert("Selecione cliente, produto e quantidade.");
                 return;
             }
 
-            const dadosPedido = {
-                cliente_id: cliente_id,
-                itens: [{ produto_id: produto_id, quantidade: quantidade }]
-            };
+            const response = await fetch(`${API_URL}/pedidos/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cliente_id: cliente_id, itens: [{ produto_id: produto_id, quantidade: quantidade }] })
+            });
 
-            try {
-                const response = await fetch(`${API_URL}/pedidos/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dadosPedido)
-                });
-
-                if (response.ok) {
-                    alert("Pedido realizado com sucesso e estoque atualizado!");
-                    carregarDados();
-                } else {
-                    const erro = await response.json();
-                    alert("Erro ao realizar pedido: " + (erro.detail || "Verifique o estoque"));
-                }
-            } catch (e) {
-                alert("Falha de conexão com a API.");
+            if (response.ok) {
+                alert("Pedido realizado com sucesso!");
+                document.getElementById('pedidoProdutoId').value = '';
+                document.getElementById('pdvProdutoSelecionadoNome').value = 'Nenhum selecionado';
+                document.getElementById('pdvTotalPreco').innerText = "R$ 0,00";
+                carregarDados();
+            } else {
+                alert("Erro ao realizar pedido.");
             }
         }
 
         async function deletarProduto(id) {
-            if (confirm("Deseja realmente excluir este produto?")) {
-                try {
-                    const response = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
-                    if (response.ok) {
-                        alert("Produto excluído com sucesso!");
-                        carregarDados();
-                    } else {
-                        alert("Erro ao excluir o produto.");
-                    }
-                } catch (e) {
-                    alert("Falha de conexão com a API.");
-                }
+            if (confirm("Excluir produto?")) {
+                await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+                carregarDados();
             }
         }
 
         async function deletarCliente(id) {
-            if (confirm("Deseja realmente excluir este cliente?")) {
-                try {
-                    const response = await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
-                    if (response.ok) {
-                        alert("Cliente excluído com sucesso!");
-                        carregarDados();
-                    } else {
-                        alert("Erro ao excluir o cliente.");
-                    }
-                } catch (e) {
-                    alert("Falha de conexão com a API.");
-                }
+            if (confirm("Excluir cliente?")) {
+                await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
+                carregarDados();
             }
+        }
+
+        async function atualizarGraficosDashboard() {
+            try {
+                const resProd = await fetch(`${API_URL}/produtos/`);
+                const produtos = await resProd.json();
+                const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
+                const maisVendidos = await resMais.json();
+
+                const labelsVendas = maisVendidos.map(m => m.produto);
+                const dataVendas = maisVendidos.map(m => m.quantidade_vendida);
+
+                if (chartVendasInstance) chartVendasInstance.destroy();
+                chartVendasInstance = new Chart(document.getElementById('graficoVendas').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labelsVendas.length ? labelsVendas : ['Sem Vendas'],
+                        datasets: [{ label: 'Qtd', data: dataVendas.length ? dataVendas : [0], backgroundColor: '#ea580c', borderRadius: 6 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                const labelsEstoque = produtos.map(p => p.nome);
+                const dataEstoque = produtos.map(p => p.estoque);
+
+                if (chartEstoqueInstance) chartEstoqueInstance.destroy();
+                chartEstoqueInstance = new Chart(document.getElementById('graficoEstoque').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: labelsEstoque.length ? labelsEstoque : ['Sem Estoque'],
+                        datasets: [{ data: dataEstoque.length ? dataEstoque : [1], backgroundColor: ['#ea580c', '#0ea5e9', '#16a34a', '#eab308', '#6366f1'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function atualizarGraficoComparativo() {
+            try {
+                const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
+                const maisVendidos = await resMais.json();
+
+                const labels = [];
+                const faturamentos = [];
+                const lucrosTotais = [];
+
+                maisVendidos.forEach(m => {
+                    labels.push(m.produto);
+                    faturamentos.push(m.total_em_reais);
+                    
+                    // Encontra o produto correspondente para calcular o lucro total baseado no custo real
+                    const prod = produtosGlobais.find(p => p.nome === m.produto);
+                    let custoUnit = 0;
+                    if(prod) {
+                        custoUnit = custosProdutos[prod.id] !== undefined ? custosProdutos[prod.id] : (prod.preco * 0.4);
+                    }
+                    const lucroUnit = (prod ? prod.preco : 0) - custoUnit;
+                    lucrosTotais.push(lucroUnit * m.quantidade_vendida);
+                });
+
+                if (chartComparativoInstance) chartComparativoInstance.destroy();
+                chartComparativoInstance = new Chart(document.getElementById('graficoComparativoLucro').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels.length ? labels : ['Sem Dados'],
+                        datasets: [
+                            { label: 'Faturamento Total (R$)', data: faturamentos, backgroundColor: '#0ea5e9', borderRadius: 6 },
+                            { label: 'Lucro Total Gerado (R$)', data: lucrosTotais, backgroundColor: '#16a34a', borderRadius: 6 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            } catch (e) { console.error(e); }
         }
 
         async function carregarDados() {
             try {
-                // Produtos
                 const resProd = await fetch(`${API_URL}/produtos/`);
-                const produtos = await resProd.json();
-                const tabProd = document.getElementById('tabelaProdutos');
-                const selectProd = document.getElementById('pedidoProduto');
-                tabProd.innerHTML = '';
-                selectProd.innerHTML = '<option value="">Selecione um produto</option>';
+                produtosGlobais = await resProd.json();
                 
-                produtos.forEach(p => {
-                    tabProd.innerHTML += `<tr>
-                        <td>${p.id}</td>
-                        <td>${p.nome}</td>
-                        <td>R$ ${parseFloat(p.preco).toFixed(2)}</td>
-                        <td>${p.estoque}</td>
-                        <td><button class="btn-excluir" onclick="deletarProduto(${p.id})">Excluir</button></td>
-                    </tr>`;
-                    selectProd.innerHTML += `<option value="${p.id}">${p.nome} (Estoque: ${p.estoque})</option>`;
+                const catalogo = document.getElementById('catalogoProdutos');
+                const pdvLista = document.getElementById('pdvListaProdutos');
+                const tabelaFinancasLucro = document.getElementById('tabelaFinancasLucro');
+                const tabelaRelLucroTotal = document.getElementById('tabelaRelatorioLucroTotal');
+                const tabelaRelClientes = document.getElementById('tabelaRelatorioClientes');
+
+                catalogo.innerHTML = '';
+                pdvLista.innerHTML = '';
+                tabelaFinancasLucro.innerHTML = '';
+                tabelaRelLucroTotal.innerHTML = '';
+                tabelaRelClientes.innerHTML = '';
+
+                let valorTotalEstoque = 0;
+
+                produtosGlobais.forEach(p => {
+                    const precoNum = parseFloat(p.preco) || 0;
+                    valorTotalEstoque += (precoNum * p.estoque);
+                    const imgUrl = p.foto || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+                    
+                    const custoSalvo = custosProdutos[p.id] !== undefined ? custosProdutos[p.id] : (precoNum * 0.4);
+                    const lucroUnit = precoNum - custoSalvo;
+                    const margem = precoNum > 0 ? ((lucroUnit / precoNum) * 100).toFixed(1) : 0;
+
+                    catalogo.innerHTML += `
+                        <div class="product-card">
+                            <img src="${imgUrl}" alt="${p.nome}" class="product-img">
+                            <div class="product-info">
+                                <div>
+                                    <h4 style="margin:0 0 4px 0; font-size:0.9rem;">${p.nome}</h4>
+                                    <p style="margin:0; color:#64748b; font-size:0.8rem;">R$ ${precoNum.toFixed(2)} | Estoque: <strong>${p.estoque}</strong></p>
+                                </div>
+                                <div style="margin-top: 8px; display:flex; gap:4px;">
+                                    <button class="btn-editar" onclick="prepararEdicaoProduto(${p.id}, '${p.nome}', ${precoNum}, ${p.estoque}, '${p.foto || ''}')">Editar</button>
+                                    <button class="btn-excluir" onclick="deletarProduto(${p.id})">Excluir</button>
+                                </div>
+                            </div>
+                        </div>`;
+
+                    pdvLista.innerHTML += `
+                        <div class="pdv-product-card" onclick="selecionarProdutoPDV(${p.id}, '${p.nome}', ${precoNum})">
+                            <img src="${imgUrl}" class="pdv-img">
+                            <div style="flex:1;">
+                                <h4 style="margin:0 0 3px 0; font-size:0.9rem;">${p.nome}</h4>
+                                <p style="margin:0; font-size:0.8rem; color:#64748b;">R$ ${precoNum.toFixed(2)} | Estoque: ${p.estoque}</p>
+                            </div>
+                        </div>`;
+
+                    tabelaFinancasLucro.innerHTML += `
+                        <tr>
+                            <td><img src="${imgUrl}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;"></td>
+                            <td style="font-weight:bold; font-size:0.85rem;">${p.nome}</td>
+                            <td><input type="number" step="0.01" id="custo_${p.id}" value="${custoSalvo}" oninput="atualizarCustoProduto(${p.id}, ${precoNum})" style="width:80px; padding:4px;"></td>
+                            <td>R$ ${precoNum.toFixed(2)}</td>
+                            <td id="lucro_${p.id}" style="color:var(--success); font-weight:bold;">R$ ${lucroUnit.toFixed(2)}</td>
+                            <td id="margem_${p.id}" style="font-weight:bold;">${margem}%</td>
+                        </tr>`;
                 });
 
-                // Clientes
+                document.getElementById('statTotalProdutos').innerText = produtosGlobais.length;
+                document.getElementById('statValorEstoque').innerText = `R$ ${valorTotalEstoque.toFixed(2)}`;
+
                 const resCli = await fetch(`${API_URL}/clientes/`);
                 const clientes = await resCli.json();
                 const tabCli = document.getElementById('tabelaClientes');
                 const selectCli = document.getElementById('pedidoCliente');
                 tabCli.innerHTML = '';
-                selectCli.innerHTML = '<option value="">Selecione um cliente</option>';
+                selectCli.innerHTML = '<option value="">Selecione...</option>';
 
                 clientes.forEach(c => {
                     tabCli.innerHTML += `<tr>
                         <td>${c.id}</td>
                         <td>${c.nome}</td>
                         <td>${c.telefone || '-'}</td>
-                        <td><button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button></td>
+                        <td>
+                            <button class="btn-editar" onclick="prepararEdicaoCliente(${c.id}, '${c.nome}', '${c.telefone || ''}')">Editar</button>
+                            <button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button>
+                        </td>
                     </tr>`;
                     selectCli.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
                 });
+                document.getElementById('statTotalClientes').innerText = clientes.length;
 
-                // Relatório Produtos Mais Vendidos
+                // Relatório de Vendas com Lucro Total Real
                 const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
                 const maisVendidos = await resMais.json();
-                const tabMais = document.getElementById('tabelaMaisVendidos');
-                tabMais.innerHTML = '';
                 maisVendidos.forEach(m => {
-                    tabMais.innerHTML += `<tr><td>${m.produto}</td><td>${m.quantidade_vendida}</td><td>R$ ${m.total_em_reais.toFixed(2)}</td></tr>`;
+                    const prod = produtosGlobais.find(p => p.nome === m.produto);
+                    let custoUnit = prod ? (custosProdutos[prod.id] !== undefined ? custosProdutos[prod.id] : (prod.preco * 0.4)) : 0;
+                    let lucroTotal = (m.total_em_reais) - (custoUnit * m.quantidade_vendida);
+
+                    tabelaRelLucroTotal.innerHTML += `
+                        <tr>
+                            <td>${m.produto}</td>
+                            <td>${m.quantidade_vendida} un</td>
+                            <td>R$ ${m.total_em_reais.toFixed(2)}</td>
+                            <td style="color:var(--success); font-weight:bold;">R$ ${lucroTotal.toFixed(2)}</td>
+                        </tr>`;
                 });
 
-                // Relatório Clientes Fiéis
                 const resFieis = await fetch(`${API_URL}/relatorios/clientes-fieis`);
-                const fieis = await resFieis.json();
-                const tabFieis = document.getElementById('tabelaClientesFieis');
-                tabFieis.innerHTML = '';
-                fieis.forEach(f => {
-                    tabFieis.innerHTML += `<tr><td>${f.cliente}</td><td>${f.total_pedidos}</td></tr>`;
+                const clientesFieis = await resFieis.json();
+                clientesFieis.forEach(f => {
+                    tabelaRelClientes.innerHTML += `<tr><td>${f.cliente}</td><td>${f.total_pedidos}</td></tr>`;
                 });
+
+                atualizarGraficosDashboard();
 
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
             }
         }
 
-        // Executa ao carregar a página
         window.onload = carregarDados;
     </script>
 </body>
