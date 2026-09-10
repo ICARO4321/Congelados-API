@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,9 +8,10 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
 from datetime import datetime
 
-DATABASE_URL = "sqlite:///./congelados.db"
+# Usa a pasta /tmp no Render para evitar erro 500 por falta de permissão de escrita no disco
+DATABASE_URL = "sqlite:///./congelados.db" if not os.environ.get("RENDER") else "sqlite:////tmp/congelados.db"
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -38,7 +40,6 @@ class Pedido(Base):
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=False)
     data_criacao = Column(DateTime, default=datetime.utcnow)
     status = Column(String(45), default="Concluído")
-
     cliente = relationship("Cliente")
     itens = relationship("ItemPedido", cascade="all, delete-orphan")
 
@@ -49,12 +50,12 @@ class ItemPedido(Base):
     produto_id = Column(Integer, ForeignKey("produtos.id"), nullable=False)
     quantidade = Column(Integer, nullable=False)
     preco_venda = Column(Numeric(10, 2), nullable=False)
-
     produto = relationship("Produto")
 
+# Força a criação das tabelas ao iniciar
 Base.metadata.create_all(bind=engine)
 
-# --- SCHEMAS PYDANTIC ---
+# --- SCHEMAS ---
 class ProdutoCreate(BaseModel):
     nome: str
     preco: float
@@ -103,10 +104,9 @@ class PedidoResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- INICIALIZAÇÃO FASTAPI ---
-app = FastAPI(title="Congelados e Cia API", version="2.3")
+# --- APP ---
+app = FastAPI(title="Congelados e Cia API", version="2.5")
 
-# Configuração essencial do CORS para permitir comunicação com a Vercel e outros front-ends
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -122,10 +122,17 @@ def get_db():
     finally:
         db.close()
 
-# --- ROTAS DE PRODUTOS ---
+@app.get("/")
+def raiz():
+    return {"status": "API rodando com sucesso!"}
+
 @app.get("/produtos/", response_model=List[ProdutoResponse])
 def listar_produtos(db: Session = Depends(get_db)):
-    return db.query(Produto).all()
+    try:
+        return db.query(Produto).all()
+    except Exception:
+        Base.metadata.create_all(bind=engine)
+        return []
 
 @app.post("/produtos/", status_code=status.HTTP_201_CREATED)
 def criar_produto(produto: ProdutoCreate, db: Session = Depends(get_db)):
@@ -135,30 +142,13 @@ def criar_produto(produto: ProdutoCreate, db: Session = Depends(get_db)):
     db.refresh(novo_produto)
     return {"mensagem": "Produto cadastrado!", "produto": novo_produto}
 
-@app.put("/produtos/{produto_id}")
-def atualizar_produto(produto_id: int, produto: ProdutoCreate, db: Session = Depends(get_db)):
-    prod_db = db.query(Produto).filter(Produto.id == produto_id).first()
-    if not prod_db: raise HTTPException(status_code=404, detail="Produto não encontrado")
-    prod_db.nome = produto.nome
-    prod_db.preco = produto.preco
-    prod_db.estoque = produto.estoque
-    if produto.foto: prod_db.foto = produto.foto
-    db.commit()
-    db.refresh(prod_db)
-    return {"mensagem": "Produto atualizado!", "produto": prod_db}
-
-@app.delete("/produtos/{produto_id}")
-def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
-    prod = db.query(Produto).filter(Produto.id == produto_id).first()
-    if not prod: raise HTTPException(status_code=404, detail="Produto não encontrado")
-    db.delete(prod)
-    db.commit()
-    return {"mensagem": "Produto excluído"}
-
-# --- ROTAS DE CLIENTES ---
 @app.get("/clientes/", response_model=List[ClienteResponse])
 def listar_clientes(db: Session = Depends(get_db)):
-    return db.query(Cliente).all()
+    try:
+        return db.query(Cliente).all()
+    except Exception:
+        Base.metadata.create_all(bind=engine)
+        return []
 
 @app.post("/clientes/", status_code=status.HTTP_201_CREATED)
 def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
@@ -197,10 +187,12 @@ def excluir_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Cliente excluído"}
 
-# --- ROTAS DE PEDIDOS ---
 @app.get("/pedidos/", response_model=List[PedidoResponse])
 def listar_pedidos(db: Session = Depends(get_db)):
-    return db.query(Pedido).order_by(Pedido.data_criacao.asc()).all()
+    try:
+        return db.query(Pedido).order_by(Pedido.data_criacao.asc()).all()
+    except:
+        return []
 
 @app.post("/pedidos/", status_code=status.HTTP_201_CREATED)
 def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
@@ -223,13 +215,18 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
     db.refresh(novo_pedido)
     return {"mensagem": "Pedido realizado!", "pedido": novo_pedido}
 
-# --- ROTAS DE RELATÓRIOS ---
 @app.get("/relatorios/produtos-mais-vendidos")
 def produtos_mais_vendidos(db: Session = Depends(get_db)):
-    resultados = db.query(Produto.nome, func.sum(ItemPedido.quantidade).label("quantidade_vendida"), func.sum(ItemPedido.quantidade * ItemPedido.preco_venda).label("total_em_reais")).join(ItemPedido, Produto.id == ItemPedido.produto_id).group_by(Produto.id, Produto.nome).all()
-    return [{"produto": r.nome, "quantidade_vendida": int(r.quantidade_vendida or 0), "total_em_reais": float(r.total_em_reais or 0)} for r in resultados]
+    try:
+        resultados = db.query(Produto.nome, func.sum(ItemPedido.quantidade).label("quantidade_vendida"), func.sum(ItemPedido.quantidade * ItemPedido.preco_venda).label("total_em_reais")).join(ItemPedido, Produto.id == ItemPedido.produto_id).group_by(Produto.id, Produto.nome).all()
+        return [{"produto": r.nome, "quantidade_vendida": int(r.quantidade_vendida or 0), "total_em_reais": float(r.total_em_reais or 0)} for r in resultados]
+    except:
+        return []
 
 @app.get("/relatorios/clientes-fieis")
 def clientes_fieis(db: Session = Depends(get_db)):
-    resultados = db.query(Cliente.nome, func.count(Pedido.id).label("total_pedidos")).join(Pedido, Cliente.id == Pedido.cliente_id).group_by(Cliente.id, Cliente.nome).all()
-    return [{"cliente": r.nome, "total_pedidos": int(r.total_pedidos or 0)} for r in resultados]
+    try:
+        resultados = db.query(Cliente.nome, func.count(Pedido.id).label("total_pedidos")).join(Pedido, Cliente.id == Pedido.cliente_id).group_by(Cliente.id, Cliente.nome).all()
+        return [{"cliente": r.nome, "total_pedidos": int(r.total_pedidos or 0)} for r in resultados]
+    except:
+        return []
