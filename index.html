@@ -6,6 +6,8 @@
     <title>Congelados e Cia - Gestão & BI</title>
     <!-- Importando Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Adicionar dentro do <head> do index.html -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --primary: #ea580c;
@@ -488,9 +490,6 @@
             if (response.ok) { alert("Pedido realizado!"); document.getElementById('pedidoProdutoId').value = ''; document.getElementById('pdvProdutoSelecionadoNome').value = 'Nenhum selecionado'; document.getElementById('pdvTotalPreco').innerText = "R$ 0,00"; carregarDados(); } else { alert("Erro ao realizar pedido."); }
         }
 
-        async function deletarProduto(id) { if (confirm("Excluir produto?")) { await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' }); carregarDados(); } }
-        async function deletarCliente(id) { if (confirm("Excluir cliente?")) { await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' }); carregarDados(); } }
-
         async function atualizarGraficosDashboard() {
             const resMais = await fetch(`${API_URL}/relatorios/produtos-mais-vendidos`);
             const maisVendidos = await resMais.json();
@@ -625,6 +624,80 @@
             });
         }
 
+        function abrirWhatsApp(telefone, nomeCliente) {
+            if (!telefone) {
+                alert("Este cliente não possui telefone cadastrado!");
+                return;
+            }
+            let numeroLimpo = telefone.replace(/\D/g, '');
+            if (numeroLimpo.length <= 11) {
+                numeroLimpo = '55' + numeroLimpo;
+            }
+            const mensagem = encodeURIComponent(`Olá ${nomeCliente}, aqui está o recibo dos seus produtos congelados! 🧊`);
+            window.open(`https://wa.me/${numeroLimpo}?text=${mensagem}`, '_blank');
+        }
+
+        async function gerarReciboPDF(pedidoId, clienteNome, dataStr) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.text("Congelados & Cia", 105, 20, { align: "center" });
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text("Comprovante de Venda / Recibo", 105, 26, { align: "center" });
+            doc.line(14, 32, 196, 32);
+
+            doc.setFontSize(11);
+            doc.text(`Pedido Nº: #${pedidoId}`, 14, 42);
+            doc.text(`Cliente: ${clienteNome}`, 14, 49);
+            doc.text(`Data: ${new Date(dataStr).toLocaleString('pt-BR')}`, 14, 56);
+            doc.line(14, 62, 196, 62);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Qtd", 14, 70);
+            doc.text("Produto", 30, 70);
+            doc.text("Preço Unit.", 140, 70, { align: "right" });
+            doc.text("Subtotal", 190, 70, { align: "right" });
+            doc.line(14, 73, 196, 73);
+
+            try {
+                const res = await fetch(`${API_URL}/pedidos/`);
+                const pedidos = await res.json();
+                const pedido = pedidos.find(p => p.id === pedidoId);
+
+                let y = 80;
+                let totalGeral = 0;
+
+                if (pedido && pedido.itens) {
+                    doc.setFont("helvetica", "normal");
+                    pedido.itens.forEach(item => {
+                        const prod = produtosGlobais.find(p => p.id === item.produto_id);
+                        const nomeProd = prod ? prod.nome : `Produto ID ${item.produto_id}`;
+                        const subtotal = item.quantidade * item.preco_venda;
+                        totalGeral += subtotal;
+
+                        doc.text(String(item.quantidade), 14, y);
+                        doc.text(String(nomeProd), 30, y);
+                        doc.text(`R$ ${item.preco_venda.toFixed(2)}`, 140, y, { align: "right" });
+                        doc.text(`R$ ${subtotal.toFixed(2)}`, 190, y, { align: "right" });
+                        y += 8;
+                    });
+                }
+
+                doc.line(14, y + 2, 196, y + 2);
+                doc.setFont("helvetica", "bold");
+                doc.text(`Total Geral: R$ ${totalGeral.toFixed(2)}`, 190, y + 10, { align: "right" });
+
+                doc.save(`recibo_pedido_${pedidoId}.pdf`);
+            } catch (err) {
+                console.error("Erro ao gerar PDF:", err);
+                alert("Erro ao gerar o recibo em PDF.");
+            }
+        }
+
         function atualizarHistoricoCliente() {
             const clienteId = document.getElementById('selectHistoricoCliente').value;
             const tabela = document.getElementById('tabelaHistoricoClienteDetalhado');
@@ -661,6 +734,8 @@
 
                 totalGastoGeral += totalPedido;
                 const dataFormatada = new Date(ped.data_criacao).toLocaleDateString('pt-BR');
+                const clienteObj = clientesGlobais.find(c => c.id == ped.cliente_id);
+                const nomeCli = clienteObj ? clienteObj.nome : 'Cliente';
 
                 tabela.innerHTML += `
                     <tr>
@@ -668,6 +743,10 @@
                         <td>${dataFormatada}</td>
                         <td>${itensDesc.join(', ')}</td>
                         <td style="font-weight:bold; color:var(--success);">R$ ${totalPedido.toFixed(2)}</td>
+                        <td>
+                            <button class="btn-editar" onclick="gerarReciboPDF(${ped.id}, '${nomeCli}', '${ped.data_criacao}')">📄 PDF</button>
+                            <button class="btn-excluir" onclick="excluirPedido(${ped.id})">Excluir</button>
+                        </td>
                     </tr>`;
             });
 
@@ -691,7 +770,7 @@
                     const custo = custosProdutos[p.id] !== undefined ? custosProdutos[p.id] : (preco * 0.4);
                     const lucroUnit = preco - custo; const margem = preco > 0 ? ((lucroUnit / preco) * 100).toFixed(1) : 0;
 
-                    catalogo.innerHTML += `<div class="product-card"><img src="${img}" class="product-img"><div class="product-info"><div><h4 style="margin:0 0 4px 0;font-size:0.85rem;">${p.nome}</h4><p style="margin:0;color:#64748b;font-size:0.75rem;">R$ ${preco.toFixed(2)} | Est: <strong>${p.estoque}</strong></p></div><div style="margin-top:6px;display:flex;gap:4px;"><button class="btn-editar" onclick="prepararEdicaoProduto(${p.id},'${p.nome}',${preco},${p.estoque},'${p.foto || ''}')">Editar</button><button class="btn-excluir" onclick="deletarProduto(${p.id})">Excluir</button></div></div></div>`;
+                    catalogo.innerHTML += `<div class="product-card"><img src="${img}" class="product-img"><div class="product-info"><div><h4 style="margin:0 0 4px 0;font-size:0.85rem;">${p.nome}</h4><p style="margin:0;color:#64748b;font-size:0.75rem;">R$ ${preco.toFixed(2)} | Est: <strong>${p.estoque}</strong></p></div><div style="margin-top:6px;display:flex;gap:4px;"><button class="btn-editar" onclick="prepararEdicaoProduto(${p.id},'${p.nome}',${preco},${p.estoque},'${p.foto || ''}')">Editar</button><button class="btn-excluir" onclick="excluirProduto(${p.id})">Excluir</button></div></div></div>`;
                     pdvLista.innerHTML += `<div class="pdv-product-card" onclick="selecionarProdutoPDV(${p.id},'${p.nome}',${preco})"><img src="${img}" class="pdv-img"><div style="flex:1; min-width:0;"><h4 style="margin:0 0 2px 0;font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.nome}</h4><p style="margin:0;font-size:0.75rem;color:#64748b;">R$ ${preco.toFixed(2)} | Est: ${p.estoque}</p></div></div>`;
                     tabelaFinancas.innerHTML += `<tr><td><img src="${img}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;"></td><td style="font-weight:bold;">${p.nome}</td><td><input type="number" step="0.01" id="custo_${p.id}" value="${custo}" oninput="atualizarCustoProduto(${p.id}, ${preco})" style="width:65px;padding:4px;font-size:0.8rem;"></td><td>R$ ${preco.toFixed(2)}</td><td id="lucro_${p.id}" style="color:var(--success);font-weight:bold;">R$ ${lucroUnit.toFixed(2)}</td><td id="margem_${p.id}" style="font-weight:bold;">${margem}%</td></tr>`;
                 });
@@ -711,7 +790,8 @@
                         <td>${c.observacao || '-'}</td>
                         <td>
                             <button class="btn-editar" onclick="prepararEdicaoCliente(${c.id}, '${c.nome}', '${c.cnpj || ''}', '${c.telefone || ''}', '${c.cidade || ''}', '${c.endereco || ''}', '${c.observacao || ''}')">Editar</button>
-                            <button class="btn-excluir" onclick="deletarCliente(${c.id})">Excluir</button>
+                            <button class="btn-excluir" onclick="excluirCliente(${c.id})">Excluir</button>
+                            <button onclick="abrirWhatsApp('${c.telefone || ''}', '${c.nome}')" style="background-color: #25D366; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;" title="Abrir WhatsApp">💬 Wpp</button>
                         </td>
                     </tr>`;
                     selCli.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
@@ -738,53 +818,53 @@
         }
         window.onload = carregarDados;
     
-async function excluirCliente(id) {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
-    try {
-        const response = await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-            alert("Cliente excluído com sucesso!");
-            carregarDados();
-        } else {
-            alert("Erro ao excluir cliente.");
+        async function excluirCliente(id) {
+            if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
+            try {
+                const response = await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert("Cliente excluído com sucesso!");
+                    carregarDados();
+                } else {
+                    alert("Erro ao excluir cliente.");
+                }
+            } catch (err) {
+                console.error("Erro:", err);
+                alert("Erro de conexão com o servidor.");
+            }
         }
-    } catch (err) {
-        console.error("Erro:", err);
-        alert("Erro de conexão com o servidor.");
-    }
-}
 
-async function excluirProduto(id) {
-    if (!confirm("Tem certeza que deseja excluir este produto?")) return;
-    try {
-        const response = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-            alert("Produto excluído com sucesso!");
-            carregarDados();
-        } else {
-            alert("Erro ao excluir produto.");
+        async function excluirProduto(id) {
+            if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+            try {
+                const response = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert("Produto excluído com sucesso!");
+                    carregarDados();
+                } else {
+                    alert("Erro ao excluir produto.");
+                }
+            } catch (err) {
+                console.error("Erro:", err);
+                alert("Erro de conexão com o servidor.");
+            }
         }
-    } catch (err) {
-        console.error("Erro:", err);
-        alert("Erro de conexão com o servidor.");
-    }
-}
 
-async function excluirPedido(id) {
-    if (!confirm("Tem certeza que deseja excluir esta venda?")) return;
-    try {
-        const response = await fetch(`${API_URL}/pedidos/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-            alert("Venda excluída com sucesso!");
-            carregarDados();
-        } else {
-            alert("Erro ao excluir venda.");
+        async function excluirPedido(id) {
+            if (!confirm("Tem certeza que deseja excluir esta venda?")) return;
+            try {
+                const response = await fetch(`${API_URL}/pedidos/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert("Venda excluída com sucesso!");
+                    carregarDados();
+                } else {
+                    alert("Erro ao excluir venda.");
+                }
+            } catch (err) {
+                console.error("Erro:", err);
+                alert("Erro de conexão com o servidor.");
+            }
         }
-    } catch (err) {
-        console.error("Erro:", err);
-        alert("Erro de conexão com o servidor.");
-    }
-}
     </script>
     
 </body>
