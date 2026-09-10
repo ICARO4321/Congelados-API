@@ -8,14 +8,13 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
 from datetime import datetime
 
-# --- CONFIGURAÇÃO DO BANCO DE DADOS (À PROVA DE FALHAS) ---
-# Se rodar no Render (nuvem), usa o Supabase. Se rodar no seu PC, força o SQLite.
-if os.environ.get("RENDER"):
-    DATABASE_URL = "postgresql://postgres:sYSzydt5gKAI7WcM@db.sxmvycuqiuvcyfvjddpb.supabase.co:5432/postgres"
-    engine = create_engine(DATABASE_URL)
-else:
-    DATABASE_URL = "sqlite:///./congelados.db"
+# Configuração robusta do banco de dados (SQLite local vs PostgreSQL no Render)
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./congelados.db")
+
+if "sqlite" in DATABASE_URL:
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
