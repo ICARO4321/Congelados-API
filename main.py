@@ -8,14 +8,12 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
 from datetime import datetime
 
-# Usa a pasta /tmp no Render para evitar erro 500 por falta de permissão de escrita no disco
 DATABASE_URL = "sqlite:///./congelados.db" if not os.environ.get("RENDER") else "sqlite:////tmp/congelados.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# --- MODELOS DO BANCO ---
 class Produto(Base):
     __tablename__ = "produtos"
     id = Column(Integer, primary_key=True, index=True)
@@ -52,10 +50,8 @@ class ItemPedido(Base):
     preco_venda = Column(Numeric(10, 2), nullable=False)
     produto = relationship("Produto")
 
-# Força a criação das tabelas ao iniciar
 Base.metadata.create_all(bind=engine)
 
-# --- SCHEMAS ---
 class ProdutoCreate(BaseModel):
     nome: str
     preco: float
@@ -104,8 +100,7 @@ class PedidoResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- APP ---
-app = FastAPI(title="Congelados e Cia API", version="2.5")
+app = FastAPI(title="Congelados e Cia API", version="2.7")
 
 app.add_middleware(
     CORSMiddleware,
@@ -141,6 +136,14 @@ def criar_produto(produto: ProdutoCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(novo_produto)
     return {"mensagem": "Produto cadastrado!", "produto": novo_produto}
+
+@app.delete("/produtos/{produto_id}")
+def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
+    prod = db.query(Produto).filter(Produto.id == produto_id).first()
+    if not prod: raise HTTPException(status_code=404, detail="Produto não encontrado")
+    db.delete(prod)
+    db.commit()
+    return {"mensagem": "Produto excluído com sucesso"}
 
 @app.get("/clientes/", response_model=List[ClienteResponse])
 def listar_clientes(db: Session = Depends(get_db)):
@@ -214,6 +217,14 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(novo_pedido)
     return {"mensagem": "Pedido realizado!", "pedido": novo_pedido}
+
+@app.delete("/pedidos/{pedido_id}")
+def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
+    pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
+    if not pedido: raise HTTPException(status_code=404, detail="Venda/Pedido não encontrado")
+    db.delete(pedido)
+    db.commit()
+    return {"mensagem": "Venda excluída com sucesso"}
 
 @app.get("/relatorios/produtos-mais-vendidos")
 def produtos_mais_vendidos(db: Session = Depends(get_db)):

@@ -342,8 +342,7 @@
             </div>
         </div>
     </div>
-
-    <script>
+<script>
         const API_URL = "https://congelados-api.onrender.com";
         let chartVendasInstance = null;
         let chartEstoqueInstance = null;
@@ -738,6 +737,55 @@
             } catch (e) { console.error(e); }
         }
         window.onload = carregarDados;
+    
+async function excluirCliente(id) {
+    if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
+    try {
+        const response = await fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert("Cliente excluído com sucesso!");
+            carregarDados();
+        } else {
+            alert("Erro ao excluir cliente.");
+        }
+    } catch (err) {
+        console.error("Erro:", err);
+        alert("Erro de conexão com o servidor.");
+    }
+}
+
+async function excluirProduto(id) {
+    if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+    try {
+        const response = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert("Produto excluído com sucesso!");
+            carregarDados();
+        } else {
+            alert("Erro ao excluir produto.");
+        }
+    } catch (err) {
+        console.error("Erro:", err);
+        alert("Erro de conexão com o servidor.");
+    }
+}
+
+async function excluirPedido(id) {
+    if (!confirm("Tem certeza que deseja excluir esta venda?")) return;
+    try {
+        const response = await fetch(`${API_URL}/pedidos/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert("Venda excluída com sucesso!");
+            carregarDados();
+        } else {
+            alert("Erro ao excluir venda.");
+        }
+    } catch (err) {
+        console.error("Erro:", err);
+        alert("Erro de conexão com o servidor.");
+    }
+}
     </script>
+    
 </body>
 </html>
