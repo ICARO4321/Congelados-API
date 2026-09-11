@@ -122,6 +122,40 @@
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.8rem; vertical-align: middle; white-space: nowrap; }
         th { background-color: #f8fafc; font-weight: 600; color: #475569; }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #recibo-venda, #recibo-venda * {
+                visibility: visible;
+            }
+
+            #recibo-venda {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: block !important;
+                font-family: monospace;
+                color: black;
+            }
+        }
+
+        .btn-imprimir {
+            background-color: #475569;
+            color: white;
+            border: none;
+            padding: 5px 9px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .btn-imprimir:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -138,6 +172,7 @@
             <li onclick="mudarPagina('produtos')" id="menu-produtos">📦 Produtos & Estoque</li>
             <li onclick="mudarPagina('clientes')" id="menu-clientes">👥 Clientes</li>
             <li onclick="mudarPagina('pedidos')" id="menu-pedidos">🛒 Registrar Pedido</li>
+            <li onclick="mudarPagina('historico')" id="menu-historico">🧾 Histórico de Vendas</li>
             <li onclick="mudarPagina('financas')" id="menu-financas">💰 Finanças & Lucro</li>
             <li onclick="mudarPagina('relatorios')" id="menu-relatorios">📈 Relatórios BI</li>
         </ul>
@@ -247,7 +282,67 @@
             </div>
         </div>
 
-        <!-- TELA 5: FINANÇAS & LUCRO -->
+
+        <!-- TELA 5: HISTÓRICO DE VENDAS -->
+        <div id="page-historico" class="page">
+            <div class="card">
+                <h2 class="section-title">🧾 Histórico de Vendas</h2>
+                <div class="table-responsive">
+                    <table class="table" id="tabela-historico-vendas">
+                        <thead>
+                            <tr>
+                                <th>Nº Pedido</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-historico-vendas">
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:#64748b;">
+                                    Carregando vendas...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ESTRUTURA DO RECIBO: usada somente na impressão -->
+        <div id="recibo-venda" style="display: none;">
+            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
+                <h2>CONGELADOS & CIA</h2>
+                <p>CNPJ: 00.000.000/0001-00 | (35) 99999-9999</p>
+                <p>Passos - MG</p>
+            </div>
+
+            <div id="recibo-dados-cliente" style="margin-bottom: 15px;">
+            </div>
+
+            <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #000;">
+                        <th>Qtd</th>
+                        <th>Produto</th>
+                        <th>V. Unit</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="recibo-itens">
+                </tbody>
+            </table>
+
+            <h3 id="recibo-total" style="text-align: right; margin-top: 15px;">
+                Total: R$ 0,00
+            </h3>
+            <p style="text-align: center; margin-top: 20px; font-size: 12px;">
+                Obrigado pela preferência!
+            </p>
+        </div>
+
+        <!-- TELA 6: FINANÇAS & LUCRO -->
         <div id="page-financas" class="page">
             <div class="card">
                 <h2 class="section-title">Calculadora de Custo, Preço e Lucratividade</h2>
@@ -260,7 +355,7 @@
             </div>
         </div>
 
-        <!-- TELA 6: RELATÓRIOS BI -->
+        <!-- TELA 7: RELATÓRIOS BI -->
         <div id="page-relatorios" class="page">
             
             <div class="charts-row">
@@ -369,13 +464,14 @@
             document.getElementById(`page-${paginaId}`).classList.add('active');
             document.getElementById(`menu-${paginaId}`).classList.add('active');
 
-            const titulos = { 'dashboard': 'Dashboard Analítico', 'produtos': 'Produtos & Estoque', 'clientes': 'Gestão de Clientes', 'pedidos': 'Registrar Pedido (PDV)', 'financas': 'Finanças & Lucro', 'relatorios': 'Relatórios Gerenciais BI' };
+            const titulos = { 'dashboard': 'Dashboard Analítico', 'produtos': 'Produtos & Estoque', 'clientes': 'Gestão de Clientes', 'pedidos': 'Registrar Pedido (PDV)', 'historico': 'Histórico de Vendas', 'financas': 'Finanças & Lucro', 'relatorios': 'Relatórios Gerenciais BI' };
             document.getElementById('page-title').innerText = titulos[paginaId];
 
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('sidebarOverlay').classList.remove('active');
 
             if(paginaId === 'dashboard') atualizarGraficosDashboard();
+            if(paginaId === 'historico') carregarHistoricoVendas();
             if(paginaId === 'relatorios') {
                 processarRelatoriosMensais();
                 atualizarGraficoComparativo();
@@ -754,6 +850,122 @@
             document.getElementById('clienteTotalPedidos').innerText = pedidosCliente.length;
         }
 
+
+        // HISTÓRICO DE VENDAS E RECIBO
+        function carregarHistoricoVendas() {
+            const tbody = document.getElementById('lista-historico-vendas');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!Array.isArray(pedidosGlobais) || pedidosGlobais.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:#64748b;">
+                            Nenhuma venda registrada.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            // Mostra as vendas mais recentes primeiro.
+            const pedidosOrdenados = [...pedidosGlobais].sort((a, b) => {
+                const dataA = new Date(a.data_criacao || 0).getTime();
+                const dataB = new Date(b.data_criacao || 0).getTime();
+                return dataB - dataA || Number(b.id) - Number(a.id);
+            });
+
+            pedidosOrdenados.forEach(pedido => {
+                const cliente = clientesGlobais.find(c => c.id == pedido.cliente_id);
+                const nomeCliente = cliente ? cliente.nome : 'Cliente Deletado';
+
+                const data = pedido.data_criacao
+                    ? new Date(pedido.data_criacao).toLocaleDateString('pt-BR')
+                    : '-';
+
+                const status = pedido.status || 'Concluído';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold;">#${pedido.id}</td>
+                        <td>${data}</td>
+                        <td>${nomeCliente}</td>
+                        <td>${status}</td>
+                        <td>
+                            <button class="btn-imprimir" onclick="gerarRecibo(${pedido.id})">
+                                🖨️ Recibo
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function gerarRecibo(pedidoId) {
+            const pedido = pedidosGlobais.find(p => p.id == pedidoId);
+            if (!pedido) {
+                alert("Pedido não encontrado.");
+                return;
+            }
+
+            const cliente = clientesGlobais.find(c => c.id == pedido.cliente_id);
+
+            // Dados do cliente
+            document.getElementById('recibo-dados-cliente').innerHTML = `
+                <strong>Cliente:</strong> ${cliente ? cliente.nome : 'N/A'}<br>
+                <strong>Telefone:</strong> ${cliente && cliente.telefone ? cliente.telefone : 'N/A'}<br>
+                <strong>Endereço:</strong> ${cliente && cliente.endereco ? cliente.endereco : 'N/A'}<br>
+                <strong>Data:</strong> ${pedido.data_criacao
+                    ? new Date(pedido.data_criacao).toLocaleString('pt-BR')
+                    : 'N/A'}
+            `;
+
+            // Itens do pedido
+            const tbodyItens = document.getElementById('recibo-itens');
+            tbodyItens.innerHTML = '';
+
+            let valorTotal = 0;
+
+            (pedido.itens || []).forEach(item => {
+                const produto = produtosGlobais.find(p => p.id == item.produto_id);
+                const nomeProduto = produto ? produto.nome : 'Produto Excluído';
+
+                const precoVenda = parseFloat(item.preco_venda) || 0;
+                const quantidade = parseInt(item.quantidade) || 0;
+                const subtotal = quantidade * precoVenda;
+
+                valorTotal += subtotal;
+
+                tbodyItens.innerHTML += `
+                    <tr>
+                        <td>${quantidade}x</td>
+                        <td>${nomeProduto}</td>
+                        <td>R$ ${precoVenda.toFixed(2)}</td>
+                        <td>R$ ${subtotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('recibo-total').innerText =
+                `Total: R$ ${valorTotal.toFixed(2)}`;
+
+            const reciboDiv = document.getElementById('recibo-venda');
+            reciboDiv.style.display = 'block';
+
+            // Aguarda o navegador atualizar o recibo antes de abrir a impressão.
+            setTimeout(() => {
+                window.print();
+
+                // O afterprint é usado para esconder novamente o recibo.
+                const esconderRecibo = () => {
+                    reciboDiv.style.display = 'none';
+                    window.removeEventListener('afterprint', esconderRecibo);
+                };
+
+                window.addEventListener('afterprint', esconderRecibo);
+            }, 100);
+        }
+
         async function carregarDados() {
             try {
                 const resProd = await fetch(`${API_URL}/produtos/`); produtosGlobais = await resProd.json();
@@ -808,6 +1020,7 @@
                 });
 
                 atualizarGraficosDashboard();
+                carregarHistoricoVendas();
                 if(document.getElementById('page-relatorios').classList.contains('active')) {
                     processarRelatoriosMensais();
                     atualizarGraficoComparativo();
