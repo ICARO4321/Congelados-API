@@ -693,6 +693,10 @@ async function criarPedido() {
             return mostrarMensagem('Informe uma quantidade válida (mínimo 1).', 'aviso');
         }
 
+        // Recupera o produto e o preço de venda para enviar ao back-end
+        const produto = produtosPorId.get(produtoId);
+        const precoVenda = produto ? produto.preco : 0;
+
         mostrarMensagem('Registrando venda...', 'info', 2500);
         try {
             await requisitar(
@@ -700,7 +704,16 @@ async function criarPedido() {
                 {
                     method: 'POST',
                     headers: CABECALHO_JSON,
-                    body: JSON.stringify({ cliente_id: clienteId, itens: [{ produto_id: produtoId, quantidade }] })
+                    body: JSON.stringify({
+                        cliente_id: clienteId,
+                        itens: [
+                            {
+                                produto_id: produtoId,
+                                quantidade: quantidade,
+                                preco_venda: precoVenda // <- Isso é obrigatório para a API
+                            }
+                        ]
+                    })
                 },
                 { json: false }
             );
