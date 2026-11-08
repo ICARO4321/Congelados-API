@@ -755,11 +755,11 @@
                 let lucroPed = 0;
                 
                 ped.itens.forEach(item => {
-                    const precoVendaItem = parseFloat(item.preco_venda) || 0;
+                    const prod = produtosGlobais.find(p => p.id === item.produto_id);
+                    const precoVendaItem = parseFloat(item.preco_venda) || (prod ? parseFloat(prod.preco) : 0);
                     const fatItem = item.quantidade * precoVendaItem;
                     faturamentoPed += fatItem;
                     
-                    const prod = produtosGlobais.find(p => p.id === item.produto_id);
                     let custoUnit = prod ? (custosProdutos[prod.id] !== undefined ? custosProdutos[prod.id] : (prod.preco * 0.4)) : 0;
                     lucroPed += (precoVendaItem - custoUnit) * item.quantidade;
                 });
