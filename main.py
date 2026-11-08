@@ -1,4 +1,5 @@
 import os
+import traceback
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,7 +9,6 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
 from datetime import datetime
 
-# Configuração robusta do banco de dados (SQLite local vs PostgreSQL no Render)
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./congelados.db")
 
 if "sqlite" in DATABASE_URL:
@@ -59,7 +59,6 @@ class ItemPedido(Base):
 Base.metadata.create_all(bind=engine)
 
 # --- SCHEMAS ---
-
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -91,7 +90,7 @@ class ClienteResponse(ClienteCreate):
 class ItemPedidoCreate(BaseModel):
     produto_id: int
     quantidade: int
-    preco_venda: Optional[float] = None  # Corrigido para aceitar o preço enviado pelo front-end
+    preco_venda: Optional[float] = None
 
 class PedidoCreate(BaseModel):
     cliente_id: int
@@ -119,7 +118,7 @@ app = FastAPI(title="Congelados e Cia API", version="3.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,  # Ajustado para False para evitar conflito com allow_origins=["*"]
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -135,7 +134,6 @@ def get_db():
 def raiz():
     return {"status": "API rodando perfeitamente!"}
 
-# --- ROTA DE LOGIN ---
 @app.post("/login")
 def login(credentials: LoginRequest):
     if credentials.username == "admin" and credentials.password == "admin":
@@ -145,7 +143,6 @@ def login(credentials: LoginRequest):
     else:
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos")
 
-# --- PRODUTOS ---
 @app.get("/produtos/", response_model=List[ProdutoResponse])
 def listar_produtos(db: Session = Depends(get_db)):
     try:
@@ -169,7 +166,6 @@ def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Produto excluído com sucesso"}
 
-# --- CLIENTES ---
 @app.get("/clientes/", response_model=List[ClienteResponse])
 def listar_clientes(db: Session = Depends(get_db)):
     try:
@@ -214,7 +210,6 @@ def excluir_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Cliente excluído"}
 
-# --- PEDIDOS ---
 @app.get("/pedidos/", response_model=List[PedidoResponse])
 def listar_pedidos(db: Session = Depends(get_db)):
     try:
@@ -226,7 +221,8 @@ def listar_pedidos(db: Session = Depends(get_db)):
 def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
     try:
         cliente = db.query(Cliente).filter(Cliente.id == pedido.cliente_id).first()
-        if not cliente: raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        if not cliente: 
+            raise HTTPException(status_code=404, detail="Cliente não encontrado")
         
         novo_pedido = Pedido(cliente_id=pedido.cliente_id)
         db.add(novo_pedido)
@@ -234,13 +230,13 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
 
         for item in pedido.itens:
             produto = db.query(Produto).filter(Produto.id == item.produto_id).first()
-            if not produto: raise HTTPException(status_code=404, detail="Produto não encontrado")
-            if produto.estoque < item.quantidade: raise HTTPException(status_code=400, detail="Estoque insuficiente")
+            if not produto: 
+                raise HTTPException(status_code=404, detail=f"Produto ID {item.produto_id} não encontrado")
+            if produto.estoque < item.quantidade: 
+                raise HTTPException(status_code=400, detail="Estoque insuficiente")
             
             produto.estoque -= item.quantidade
-            
-            # Utiliza o preço enviado ou o preço atual do produto cadastrado
-            preco_final = item.preco_venda if item.preco_venda is not None else produto.preco
+            preco_final = float(item.preco_venda) if item.preco_venda is not None else float(produto.preco)
             
             novo_item = ItemPedido(
                 pedido_id=novo_pedido.id, 
@@ -258,7 +254,9 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
         raise he
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro interno ao criar pedido: {str(e)}")
+        erro_detalhado = str(e)
+        print("ERRO EM CRIAR PEDIDO:", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=erro_detalhado)
 
 @app.delete("/pedidos/{pedido_id}")
 def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
@@ -268,7 +266,6 @@ def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Venda excluída com sucesso"}
 
-# --- RELATÓRIOS ---
 @app.get("/relatorios/produtos-mais-vendidos")
 def produtos_mais_vendidos(db: Session = Depends(get_db)):
     try:
