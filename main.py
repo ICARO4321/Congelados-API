@@ -1,5 +1,4 @@
 import os
-import traceback
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -56,6 +55,7 @@ class ItemPedido(Base):
     preco_venda = Column(Numeric(10, 2), nullable=False)
     produto = relationship("Produto")
 
+# Garante a criação limpa ou atualização das tabelas
 Base.metadata.create_all(bind=engine)
 
 # --- SCHEMAS ---
@@ -112,7 +112,7 @@ class PedidoResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- APP ---
+# --- APP E CORS ---
 app = FastAPI(title="Congelados e Cia API", version="3.0")
 
 app.add_middleware(
@@ -132,7 +132,7 @@ def get_db():
 
 @app.get("/")
 def raiz():
-    return {"status": "API rodando perfeitamente!"}
+    return {"status": "API parametrizada e rodando perfeitamente!"}
 
 @app.post("/login")
 def login(credentials: LoginRequest):
@@ -175,14 +175,7 @@ def listar_clientes(db: Session = Depends(get_db)):
 
 @app.post("/clientes/", status_code=status.HTTP_201_CREATED)
 def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
-    novo_cliente = Cliente(
-        nome=cliente.nome,
-        telefone=cliente.telefone,
-        cnpj=cliente.cnpj,
-        endereco=cliente.endereco,
-        cidade=cliente.cidade,
-        observacao=cliente.observacao
-    )
+    novo_cliente = Cliente(**cliente.dict())
     db.add(novo_cliente)
     db.commit()
     db.refresh(novo_cliente)
@@ -192,12 +185,8 @@ def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
 def atualizar_cliente(cliente_id: int, cliente: ClienteCreate, db: Session = Depends(get_db)):
     cli_db = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cli_db: raise HTTPException(status_code=404, detail="Cliente não encontrado")
-    cli_db.nome = cliente.nome
-    cli_db.telefone = cliente.telefone
-    cli_db.cnpj = cliente.cnpj
-    cli_db.endereco = cliente.endereco
-    cli_db.cidade = cliente.cidade
-    cli_db.observacao = cliente.observacao
+    for key, value in cliente.dict().items():
+        setattr(cli_db, key, value)
     db.commit()
     db.refresh(cli_db)
     return {"mensagem": "Cliente atualizado com sucesso!", "cliente": cli_db}
@@ -254,14 +243,12 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
         raise he
     except Exception as e:
         db.rollback()
-        erro_detalhado = str(e)
-        print("ERRO EM CRIAR PEDIDO:", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=erro_detalhado)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/pedidos/{pedido_id}")
 def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
-    if not pedido: raise HTTPException(status_code=404, detail="Venda/Pedido não encontrado")
+    if not pedido: raise HTTPException(status_code=404, detail="Venda não encontrada")
     db.delete(pedido)
     db.commit()
     return {"mensagem": "Venda excluída com sucesso"}

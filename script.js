@@ -1,5 +1,5 @@
 // ============================================================
-// AUTOSSUFICIÊNCIA (funciona mesmo com um index.html antigo)
+// AUTOSSUFICIÊNCIA
 // ============================================================
 if (typeof obterRole !== 'function') {
     globalThis.obterRole = function () {
@@ -38,10 +38,10 @@ if (typeof obterRole !== 'function') {
 const API_URL = "https://congelados-api.onrender.com";
 const IMG_PADRAO = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
 const CHAVE_CUSTOS = 'congelados_custos';
-const TIMEOUT_REQUISICAO_MS = 60000;      // a API no Render pode "acordar" devagar
-const CUSTO_PADRAO_PERCENTUAL = 0.4;      // custo estimado quando não há custo cadastrado
-const CUSTO_BI_PADRAO_PERCENTUAL = 0.5;   // custo estimado usado na tabela mensal do BI
-const MAX_FOTO_BYTES = 5 * 1024 * 1024;   // 5 MB
+const TIMEOUT_REQUISICAO_MS = 60000;
+const CUSTO_PADRAO_PERCENTUAL = 0.4;
+const CUSTO_BI_PADRAO_PERCENTUAL = 0.5;
+const MAX_FOTO_BYTES = 5 * 1024 * 1024;
 
 const TITULOS_PAGINAS = {
     dashboard: 'Dashboard Analítico',
@@ -248,7 +248,6 @@ async function requisitar(url, opcoes = {}, { timeout = TIMEOUT_REQUISICAO_MS, j
 
 const CABECALHO_JSON = { 'Content-Type': 'application/json' };
 
-// Evita cliques duplos (ex.: criar o mesmo pedido duas vezes)
 async function executarUmaVez(chave, fn) {
     if (operacoesEmAndamento.has(chave)) return;
     operacoesEmAndamento.add(chave);
@@ -260,7 +259,7 @@ async function executarUmaVez(chave, fn) {
 }
 
 // ============================================================
-// NORMALIZAÇÃO DOS DADOS DA API (fallbacks seguros)
+// NORMALIZAÇÃO DOS DADOS DA API
 // ============================================================
 function normalizarProduto(p) {
     if (!p || typeof p !== 'object') return null;
@@ -297,7 +296,6 @@ function normalizarItemPedido(item) {
     return {
         produto_id: Number.isFinite(produtoId) ? produtoId : null,
         quantidade: Math.max(0, Math.trunc(paraNumero(item.quantidade))),
-        // 0, vazio ou inválido = "sem preço registrado" -> usa o preço do produto (comportamento original)
         preco_venda: (paraNumero(item.preco_venda, 0) > 0) ? paraNumero(item.preco_venda, 0) : null
     };
 }
@@ -335,7 +333,7 @@ function precoDoItem(item, produto) {
 }
 
 // ============================================================
-// CUSTOS (localStorage validado)
+// CUSTOS (localStorage)
 // ============================================================
 function salvarCustos(custos) {
     try {
@@ -343,7 +341,7 @@ function salvarCustos(custos) {
         return true;
     } catch (e) {
         console.warn('Não foi possível salvar os custos:', e);
-        avisarUmaVez('storage', 'Não foi possível salvar os custos neste navegador (armazenamento indisponível ou cheio).');
+        avisarUmaVez('storage', 'Não foi possível salvar os custos neste navegador.');
         return false;
     }
 }
@@ -353,7 +351,6 @@ function carregarCustos() {
     try {
         bruto = localStorage.getItem(CHAVE_CUSTOS);
     } catch (e) {
-        console.warn('localStorage indisponível:', e);
         return {};
     }
     if (bruto === null) return {};
@@ -363,23 +360,13 @@ function carregarCustos() {
         if (!lido || typeof lido !== 'object' || Array.isArray(lido)) throw new Error('formato inválido');
 
         const limpo = {};
-        let houveDescarte = false;
         Object.entries(lido).forEach(([chave, valor]) => {
-            const n = typeof valor === 'number'
-                ? valor
-                : (typeof valor === 'string' && valor.trim() !== '' ? Number(valor) : NaN);
+            const n = typeof valor === 'number' ? valor : Number(valor);
             if (/^\d+$/.test(chave) && Number.isFinite(n) && n >= 0) limpo[chave] = n;
-            else houveDescarte = true;
         });
-        if (houveDescarte) {
-            salvarCustos(limpo);
-            avisarUmaVez('custos-parcial', 'Alguns custos salvos estavam inválidos e foram descartados.');
-        }
         return limpo;
     } catch (e) {
-        console.warn('Custos corrompidos no localStorage, redefinindo:', e);
-        try { localStorage.removeItem(CHAVE_CUSTOS); } catch (_) { /* ignora */ }
-        avisarUmaVez('custos-corrompidos', 'Os custos salvos no navegador estavam corrompidos e foram redefinidos.');
+        try { localStorage.removeItem(CHAVE_CUSTOS); } catch (_) {}
         return {};
     }
 }
@@ -407,19 +394,14 @@ else aplicarPermissoes();
 // ============================================================
 function desenharGrafico(canvasId, anterior, config) {
     if (anterior) {
-        try { anterior.destroy(); } catch (_) { /* ignora */ }
+        try { anterior.destroy(); } catch (_) {}
     }
-    if (typeof Chart === 'undefined') {
-        avisarUmaVez('chartjs', 'A biblioteca de gráficos não foi carregada. Verifique sua conexão e recarregue a página.');
-        return null;
-    }
+    if (typeof Chart === 'undefined') return null;
     const canvas = $(canvasId);
     if (!canvas) return null;
     try {
         return new Chart(canvas.getContext('2d'), config);
     } catch (e) {
-        console.error('Erro ao desenhar gráfico:', e);
-        mostrarMensagem('Não foi possível desenhar um dos gráficos.', 'aviso');
         return null;
     }
 }
@@ -478,7 +460,7 @@ function converterImagem(event) {
         return;
     }
     if (file.size > MAX_FOTO_BYTES) {
-        mostrarMensagem(`A imagem é muito grande (máx. ${MAX_FOTO_BYTES / 1024 / 1024} MB). Escolha uma menor.`, 'aviso');
+        mostrarMensagem('A imagem é muito grande (máx. 5 MB).', 'aviso');
         input.value = '';
         return;
     }
@@ -486,10 +468,7 @@ function converterImagem(event) {
     const reader = new FileReader();
     reader.onload = (e) => {
         const resultado = e.target?.result;
-        if (typeof resultado !== 'string') {
-            mostrarMensagem('Não foi possível processar a imagem selecionada.', 'erro');
-            return;
-        }
+        if (typeof resultado !== 'string') return;
         definirValor('prodFotoBase64', resultado);
         const preview = $('previewFoto');
         if (preview) {
@@ -497,7 +476,6 @@ function converterImagem(event) {
             preview.style.display = 'block';
         }
     };
-    reader.onerror = () => mostrarMensagem('Não foi possível ler a imagem selecionada.', 'erro');
     reader.readAsDataURL(file);
 }
 
@@ -512,9 +490,6 @@ async function salvarProduto() {
         if (!nome || !Number.isFinite(preco) || !Number.isFinite(estoque)) {
             return mostrarMensagem('Preencha os campos obrigatórios.', 'aviso');
         }
-        if (preco < 0 || estoque < 0) {
-            return mostrarMensagem('Preço e estoque não podem ser negativos.', 'aviso');
-        }
 
         try {
             await requisitar(
@@ -522,7 +497,7 @@ async function salvarProduto() {
                 { method: id ? 'PUT' : 'POST', headers: CABECALHO_JSON, body: JSON.stringify({ nome, preco, estoque, foto }) },
                 { json: false }
             );
-            mostrarMensagem(id ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!', 'sucesso');
+            mostrarMensagem(id ? 'Produto atualizado!' : 'Produto cadastrado!', 'sucesso');
             limparFormularioProduto();
             await carregarDados();
         } catch (err) {
@@ -533,10 +508,7 @@ async function salvarProduto() {
 
 function prepararEdicaoProduto(id) {
     const p = produtosPorId.get(Number(id));
-    if (!p) {
-        mostrarMensagem('Produto não encontrado. Atualize os dados e tente novamente.', 'aviso');
-        return;
-    }
+    if (!p) return mostrarMensagem('Produto não encontrado.', 'aviso');
     definirValor('prodEditId', p.id);
     definirValor('prodNome', p.nome);
     definirValor('prodPreco', p.preco);
@@ -596,10 +568,7 @@ async function salvarCliente() {
 
 function prepararEdicaoCliente(id) {
     const c = clientesPorId.get(Number(id));
-    if (!c) {
-        mostrarMensagem('Cliente não encontrado. Atualize os dados e tente novamente.', 'aviso');
-        return;
-    }
+    if (!c) return mostrarMensagem('Cliente não encontrado.', 'aviso');
     definirValor('cliEditId', c.id);
     definirValor('cliNome', c.nome);
     definirValor('cliCnpj', c.cnpj);
@@ -623,19 +592,11 @@ function limparFormularioCliente() {
 function abrirWhatsApp(clienteId) {
     const cliente = clientesPorId.get(Number(clienteId));
     const telefone = textoSeguro(cliente?.telefone);
-    if (!telefone) {
-        mostrarMensagem('Este cliente não possui telefone cadastrado!', 'aviso');
-        return;
-    }
+    if (!telefone) return mostrarMensagem('Este cliente não possui telefone!', 'aviso');
     let numeroLimpo = telefone.replace(/\D/g, '');
-    if (!numeroLimpo) {
-        mostrarMensagem('O telefone cadastrado é inválido.', 'aviso');
-        return;
-    }
     if (numeroLimpo.length <= 11) numeroLimpo = '55' + numeroLimpo;
     const mensagem = encodeURIComponent(`Olá ${cliente.nome}, aqui está o recibo dos seus produtos congelados! 🧊`);
-    const janela = window.open(`https://wa.me/${numeroLimpo}?text=${mensagem}`, '_blank', 'noopener');
-    if (!janela) mostrarMensagem('O navegador bloqueou a abertura do WhatsApp. Permita pop-ups para este site.', 'aviso');
+    window.open(`https://wa.me/${numeroLimpo}?text=${mensagem}`, '_blank', 'noopener');
 }
 
 // ============================================================
@@ -662,10 +623,7 @@ function atualizarCustoProduto(prodId, precoVenda) {
 // ============================================================
 function selecionarProdutoPDV(id, elemento) {
     const p = produtosPorId.get(Number(id));
-    if (!p) {
-        mostrarMensagem('Produto não encontrado. Atualize os dados e tente novamente.', 'aviso');
-        return;
-    }
+    if (!p) return mostrarMensagem('Produto não encontrado.', 'aviso');
     definirValor('pedidoProdutoId', p.id);
     definirValor('pdvProdutoSelecionadoNome', `${p.nome} (R$ ${p.preco.toFixed(2)})`);
     document.querySelectorAll('.pdv-product-card').forEach((card) => card.classList.remove('selected'));
@@ -681,68 +639,60 @@ function atualizarTotalPDV() {
 }
 
 async function criarPedido() {
-    // Pegando os valores diretamente do HTML
-    const clienteId = parseInt(document.getElementById('pedidoCliente').value, 10);
-    const produtoId = parseInt(document.getElementById('pedidoProdutoId').value, 10);
-    const quantidade = parseInt(document.getElementById('pedidoQtd').value, 10);
+    return executarUmaVez('criarPedido', async () => {
+        const clienteId = parseInt($('pedidoCliente')?.value, 10);
+        const produtoId = parseInt($('pedidoProdutoId')?.value, 10);
+        const quantidade = parseInt($('pedidoQtd')?.value, 10) || 1;
 
-    // Validação inicial com alerta visível na tela
-    if (!clienteId || !produtoId || isNaN(quantidade) || quantidade < 1) {
-        alert("⚠️ Por favor, selecione um cliente, um produto e a quantidade.");
-        return;
-    }
-
-    // Busca o preço do produto de forma segura
-    let produto = null;
-    if (typeof produtosPorId !== 'undefined' && produtosPorId.has(produtoId)) {
-        produto = produtosPorId.get(produtoId);
-    } else if (typeof produtosGlobais !== 'undefined') {
-        produto = produtosGlobais.find(p => p.id === produtoId);
-    }
-    const precoVenda = produto ? parseFloat(produto.preco) : 0;
-
-    try {
-        // Envia a requisição direto para a API
-        const response = await fetch(`${API_URL}/pedidos/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cliente_id: clienteId,
-                itens: [{
-                    produto_id: produtoId,
-                    quantidade: quantidade,
-                    preco_venda: precoVenda
-                }]
-            })
-        });
-
-        if (response.ok) {
-            alert("✅ Venda concluída com sucesso!");
-            
-            // Limpa os campos da tela do PDV
-            document.getElementById('pedidoProdutoId').value = '';
-            document.getElementById('pdvProdutoSelecionadoNome').value = 'Nenhum selecionado';
-            document.getElementById('pedidoQtd').value = '1';
-            document.getElementById('pdvTotalPreco').innerText = 'R$ 0,00';
-            
-            // Tira a bordinha laranja de seleção
-            document.querySelectorAll('.pdv-product-card').forEach(card => card.classList.remove('selected'));
-            
-            // Atualiza o sistema
-            if (typeof carregarDados === 'function') carregarDados();
-            
-        } else {
-            const erroMsg = await response.text();
-            console.error("Detalhes do erro:", erroMsg);
-            alert("❌ Erro ao realizar pedido. O servidor recusou a venda.");
+        if (!Number.isFinite(clienteId) || !Number.isFinite(produtoId)) {
+            return mostrarMensagem('Selecione um cliente e um produto.', 'aviso');
         }
-    } catch (err) {
-        console.error("Erro de conexão:", err);
-        alert("❌ Erro de comunicação. Verifique sua internet ou se a API está online.");
-    }
+        if (quantidade < 1) {
+            return mostrarMensagem('Informe uma quantidade válida.', 'aviso');
+        }
+
+        const produto = produtosPorId.get(produtoId);
+        const precoVenda = produto ? produto.preco : 0;
+
+        mostrarMensagem('Registrando venda...', 'info', 2500);
+        try {
+            const resposta = await fetch(`${API_URL}/pedidos/`, {
+                method: 'POST',
+                headers: CABECALHO_JSON,
+                body: JSON.stringify({
+                    cliente_id: clienteId,
+                    itens: [{
+                        produto_id: produtoId,
+                        quantidade: quantidade,
+                        preco_venda: precoVenda
+                    }]
+                })
+            });
+
+            if (!resposta.ok) {
+                let erroMsg = 'Erro ao processar venda no servidor.';
+                try {
+                    const errJson = await resposta.json();
+                    if (errJson?.detail) erroMsg = errJson.detail;
+                } catch (_) {}
+                throw new Error(erroMsg);
+            }
+
+            mostrarMensagem('Pedido realizado com sucesso!', 'sucesso');
+            definirValor('pedidoProdutoId', '');
+            definirValor('pdvProdutoSelecionadoNome', 'Nenhum selecionado');
+            definirValor('pedidoQtd', 1);
+            definirTexto('pdvTotalPreco', 'R$ 0,00');
+            document.querySelectorAll('.pdv-product-card').forEach((card) => card.classList.remove('selected'));
+            await carregarDados();
+        } catch (err) {
+            tratarErro(err, 'Erro ao registrar o pedido');
+        }
+    });
 }
+
 // ============================================================
-// RENDERIZAÇÃO (arrays + join para performance)
+// RENDERIZAÇÃO
 // ============================================================
 function linhaMensagem(colspan, texto, classe = 'estado-vazio') {
     return `<tr><td colspan="${colspan}" class="${classe}">${esc(texto)}</td></tr>`;
@@ -792,16 +742,10 @@ function renderizarPDV() {
         </div>`;
     }).join('');
 
-    // Mantém a seleção atual (se o produto ainda existir) ou limpa se foi excluído
     const selecionadoId = $('pedidoProdutoId')?.value;
     if (selecionadoId) {
         const card = el.querySelector(`.pdv-product-card[data-id="${CSS.escape(String(selecionadoId))}"]`);
-        if (card) {
-            card.classList.add('selected');
-        } else {
-            definirValor('pedidoProdutoId', '');
-            definirValor('pdvProdutoSelecionadoNome', 'Nenhum selecionado');
-        }
+        if (card) card.classList.add('selected');
         atualizarTotalPDV();
     }
 }
@@ -879,14 +823,6 @@ function renderizarRelatorioLucroTotal(maisVendidos) {
     }).join('');
 }
 
-function mostrarFalhaCarregamento(mensagem) {
-    const bloco = `<div class="estado-erro">⚠️ ${esc(mensagem)}<br><button onclick="carregarDados()">Tentar novamente</button></div>`;
-    definirHTML('catalogoProdutos', bloco);
-    definirHTML('pdvListaProdutos', bloco);
-    definirHTML('tabelaClientes', linhaMensagem(8, mensagem, 'estado-erro'));
-    definirHTML('tabelaFinancasLucro', linhaMensagem(6, mensagem, 'estado-erro'));
-}
-
 // ============================================================
 // CARREGAMENTO PRINCIPAL
 // ============================================================
@@ -912,11 +848,6 @@ async function carregarDados() {
 }
 
 async function carregarDadosInterno() {
-    if (!dadosCarregados) {
-        definirHTML('catalogoProdutos', '<div class="estado-vazio" style="grid-column:1/-1;">Carregando produtos... (o servidor pode levar alguns segundos para responder na primeira vez)</div>');
-    }
-
-    // 1) Dados principais
     try {
         const [resProd, resCli, resPed] = await Promise.all([
             requisitar(`${API_URL}/produtos/`),
@@ -931,51 +862,33 @@ async function carregarDadosInterno() {
         dadosCarregados = true;
     } catch (err) {
         tratarErro(err, 'Não foi possível carregar os dados do sistema');
-        if (!dadosCarregados) mostrarFalhaCarregamento(err instanceof ErroApi ? err.message : 'Falha ao carregar os dados.');
         return;
     }
 
-    try {
-        renderizarCatalogo();
-        renderizarPDV();
-        renderizarFinancas();
-        renderizarClientes();
+    renderizarCatalogo();
+    renderizarPDV();
+    renderizarFinancas();
+    renderizarClientes();
 
-        const valorEstoque = produtosGlobais.reduce((soma, p) => soma + (p.preco * p.estoque), 0);
-        definirTexto('statTotalProdutos', produtosGlobais.length);
-        definirTexto('statValorEstoque', `R$ ${valorEstoque.toFixed(2)}`);
-        definirTexto('statTotalClientes', clientesGlobais.length);
-    } catch (err) {
-        tratarErro(err, 'Não foi possível exibir os dados na tela');
-        return;
-    }
+    const valorEstoque = produtosGlobais.reduce((soma, p) => soma + (p.preco * p.estoque), 0);
+    definirTexto('statTotalProdutos', produtosGlobais.length);
+    definirTexto('statValorEstoque', `R$ ${valorEstoque.toFixed(2)}`);
+    definirTexto('statTotalClientes', clientesGlobais.length);
 
-    // 2) Produtos mais vendidos (falha aqui não impede o resto do sistema)
-    let maisVendidos = [];
     try {
-        maisVendidos = await obterMaisVendidos(true);
+        const maisVendidos = await obterMaisVendidos(true);
         renderizarRelatorioLucroTotal(maisVendidos);
-    } catch (err) {
-        maisVendidosGlobais = null;
-        tratarErro(err, 'Não foi possível carregar os produtos mais vendidos');
-        definirHTML('tabelaRelatorioLucroTotal', linhaMensagem(4, 'Não foi possível carregar este relatório.', 'estado-erro'));
-    }
+    } catch (_) {}
 
-    // 3) Gráficos e relatórios (cada função trata seus próprios erros)
     atualizarGraficosDashboard();
     carregarHistoricoVendas();
     atualizarRelatoriosBI(true);
-    if ($('page-relatorios')?.classList.contains('active')) {
-        processarRelatoriosMensais();
-        atualizarGraficoComparativo();
-        popularSelectClientesHistorico();
-    }
 }
 
 window.addEventListener('load', carregarDados);
 
 // ============================================================
-// DASHBOARD E GRÁFICOS
+// GRÁFICOS E BI
 // ============================================================
 async function atualizarGraficosDashboard() {
     try {
@@ -988,9 +901,7 @@ async function atualizarGraficosDashboard() {
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
-    } catch (err) {
-        tratarErro(err, 'Não foi possível carregar o gráfico de vendas');
-    }
+    } catch (_) {}
 
     chartEstoqueInstance = desenharGrafico('graficoEstoque', chartEstoqueInstance, {
         type: 'doughnut',
@@ -1032,23 +943,12 @@ async function atualizarGraficoComparativo() {
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
-    } catch (err) {
-        tratarErro(err, 'Não foi possível carregar o gráfico comparativo');
-    }
-}
-
-// ============================================================
-// RELATÓRIOS MENSAIS (dados já carregados)
-// ============================================================
-function rotuloMes(chave) {
-    const [ano, mes] = String(chave).split('-');
-    return `${mes}/${ano}`;
+    } catch (_) {}
 }
 
 function processarRelatoriosMensais() {
     try {
         dadosPorMes = {};
-
         pedidosGlobais.forEach((ped) => {
             const data = parseData(ped.data_criacao);
             if (!data) return;
@@ -1079,7 +979,7 @@ function processarRelatoriosMensais() {
         chartHistoricoInstance = desenharGrafico('graficoHistoricoMeses', chartHistoricoInstance, {
             type: 'bar',
             data: {
-                labels: mesesLabels.length ? mesesLabels.map(rotuloMes) : ['Sem Vendas'],
+                labels: mesesLabels.length ? mesesLabels.map((m) => { const [ano, mes] = m.split('-'); return `${mes}/${ano}`; }) : ['Sem Vendas'],
                 datasets: [{ label: 'Faturamento (R$)', data: faturamentos, backgroundColor: '#0ea5e9', borderRadius: 4 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
@@ -1087,22 +987,17 @@ function processarRelatoriosMensais() {
 
         const selectMes = $('selectFiltroMes');
         if (selectMes) {
-            selectMes.innerHTML = mesesLabels
-                .map((mes) => `<option value="${esc(mes)}">${esc(rotuloMes(mes))}</option>`)
-                .join('');
+            selectMes.innerHTML = mesesLabels.map((mes) => {
+                const [ano, m] = mes.split('-');
+                return `<option value="${esc(mes)}">${esc(`${m}/${ano}`)}</option>`;
+            }).join('');
         }
 
         if (mesesLabels.length > 0) {
             if (selectMes) selectMes.value = mesesLabels[mesesLabels.length - 1];
             atualizarTabelaMes();
-        } else {
-            definirTexto('totalFaturadoMes', 'R$ 0,00');
-            definirTexto('totalLucroMes', 'R$ 0,00');
-            definirHTML('tabelaRankingClientesMes', linhaMensagem(3, 'Nenhuma venda.'));
         }
-    } catch (err) {
-        tratarErro(err, 'Não foi possível processar os relatórios mensais');
-    }
+    } catch (_) {}
 }
 
 function atualizarTabelaMes() {
@@ -1114,12 +1009,10 @@ function atualizarTabelaMes() {
         definirTexto('totalFaturadoMes', formatarMoeda(dados.totalFaturado));
         definirTexto('totalLucroMes', formatarMoeda(dados.totalLucro));
 
-        const ranking = Object.entries(dados.clientes)
-            .map(([cliId, total]) => ({
-                nome: clientesPorId.get(Number(cliId))?.nome ?? 'Cliente removido',
-                total
-            }))
-            .sort((a, b) => b.total - a.total);
+        const ranking = Object.entries(dados.clientes).map(([cliId, total]) => ({
+            nome: clientesPorId.get(Number(cliId))?.nome ?? 'Cliente removido',
+            total
+        })).sort((a, b) => b.total - a.total);
 
         const medalhas = ['🥇', '🥈', '🥉'];
         definirHTML('tabelaRankingClientesMes', ranking.length
@@ -1129,9 +1022,7 @@ function atualizarTabelaMes() {
                 <td style="font-weight:bold; color:var(--primary);">R$ ${cli.total.toFixed(2)}</td>
             </tr>`).join('')
             : linhaMensagem(3, 'Nenhuma venda.'));
-    } catch (err) {
-        tratarErro(err, 'Não foi possível atualizar o desempenho do mês');
-    }
+    } catch (_) {}
 }
 
 function popularSelectClientesHistorico() {
@@ -1160,7 +1051,7 @@ function atualizarHistoricoCliente() {
             const itensDesc = ped.itens.map((item) => {
                 const prod = produtosPorId.get(item.produto_id);
                 totalPedido += item.quantidade * precoDoItem(item, prod);
-                return `${item.quantidade}x ${prod?.nome ?? `Produto ID ${item.produto_id ?? '?'}`}`;
+                return `${item.quantidade}x ${prod?.nome ?? `Produto`}`;
             });
             totalGastoGeral += totalPedido;
 
@@ -1179,13 +1070,11 @@ function atualizarHistoricoCliente() {
         definirHTML('tabelaHistoricoClienteDetalhado', linhas.join(''));
         definirTexto('clienteTotalGasto', formatarMoeda(totalGastoGeral));
         definirTexto('clienteTotalPedidos', pedidosCliente.length);
-    } catch (err) {
-        tratarErro(err, 'Não foi possível carregar o histórico do cliente');
-    }
+    } catch (_) {}
 }
 
 // ============================================================
-// HISTÓRICO DE VENDAS E RECIBOS
+// HISTÓRICO E RECIBOS
 // ============================================================
 function carregarHistoricoVendas() {
     const tbody = $('lista-historico-vendas');
@@ -1210,13 +1099,10 @@ function carregarHistoricoVendas() {
                 <td>${esc(formatarData(pedido.data_criacao))}</td>
                 <td>${esc(nomeCliente)}</td>
                 <td>${esc(pedido.status)}</td>
-                <td>
-                    <button class="btn-imprimir" onclick="gerarRecibo(${pedido.id})">🖨️ Recibo</button>
-                </td>
+                <td><button class="btn-imprimir" onclick="gerarRecibo(${pedido.id})">🖨️ Recibo</button></td>
             </tr>`;
         }).join('');
-    } catch (err) {
-        tratarErro(err, 'Não foi possível exibir o histórico de vendas');
+    } catch (_) {
         tbody.innerHTML = linhaMensagem(5, 'Não foi possível exibir o histórico.', 'estado-erro');
     }
 }
@@ -1224,10 +1110,7 @@ function carregarHistoricoVendas() {
 function gerarRecibo(pedidoId) {
     try {
         const pedido = pedidosGlobais.find((p) => p.id === Number(pedidoId));
-        if (!pedido) {
-            mostrarMensagem('Pedido não encontrado. Atualize os dados e tente novamente.', 'aviso');
-            return;
-        }
+        if (!pedido) return mostrarMensagem('Pedido não encontrado.', 'aviso');
         const cliente = clientesPorId.get(pedido.cliente_id);
 
         definirHTML('recibo-dados-cliente', `
@@ -1258,16 +1141,8 @@ function gerarRecibo(pedidoId) {
         if (!reciboDiv) return;
         reciboDiv.style.display = 'block';
 
-        const esconderRecibo = () => { reciboDiv.style.display = 'none'; };
-        window.addEventListener('afterprint', esconderRecibo, { once: true });
-        setTimeout(() => {
-            try {
-                window.print();
-            } catch (e) {
-                esconderRecibo();
-                mostrarMensagem('Não foi possível abrir a janela de impressão.', 'erro');
-            }
-        }, 100);
+        window.addEventListener('afterprint', () => { reciboDiv.style.display = 'none'; }, { once: true });
+        setTimeout(() => { window.print(); }, 100);
     } catch (err) {
         tratarErro(err, 'Não foi possível gerar o recibo');
     }
@@ -1276,9 +1151,7 @@ function gerarRecibo(pedidoId) {
 async function gerarReciboPDF(pedidoId) {
     return executarUmaVez(`pdf_${pedidoId}`, async () => {
         const JsPDF = window.jspdf?.jsPDF;
-        if (!JsPDF) {
-            return mostrarMensagem('A biblioteca de PDF não foi carregada. Verifique sua conexão e recarregue a página.', 'erro');
-        }
+        if (!JsPDF) return mostrarMensagem('A biblioteca de PDF não foi carregada.', 'erro');
 
         try {
             let pedido = pedidosGlobais.find((p) => p.id === Number(pedidoId));
@@ -1288,7 +1161,7 @@ async function gerarReciboPDF(pedidoId) {
             }
             if (!pedido) return mostrarMensagem('Pedido não encontrado.', 'aviso');
 
-            const clienteNome = clientesPorId.get(pedido.cliente_id)?.nome ?? 'Cliente não identificado';
+            const clienteNome = clientesPorId.get(pedido.cliente_id)?.nome ?? 'Cliente';
             const doc = new JsPDF();
 
             doc.setFont('helvetica', 'bold');
@@ -1317,15 +1190,10 @@ async function gerarReciboPDF(pedidoId) {
             let totalGeral = 0;
             doc.setFont('helvetica', 'normal');
 
-            if (!pedido.itens.length) {
-                doc.text('Pedido sem itens registrados.', 14, y);
-                y += 8;
-            }
-
             pedido.itens.forEach((item) => {
                 if (y > 275) { doc.addPage(); y = 20; }
                 const prod = produtosPorId.get(item.produto_id);
-                const nomeProd = prod?.nome ?? `Produto ID ${item.produto_id ?? '?'}`;
+                const nomeProd = prod?.nome ?? `Produto`;
                 const precoVenda = precoDoItem(item, prod);
                 const subtotal = item.quantidade * precoVenda;
                 totalGeral += subtotal;
@@ -1337,28 +1205,27 @@ async function gerarReciboPDF(pedidoId) {
                 y += 8;
             });
 
-            if (y > 265) { doc.addPage(); y = 20; }
             doc.line(14, y + 2, 196, y + 2);
             doc.setFont('helvetica', 'bold');
             doc.text(`Total Geral: R$ ${totalGeral.toFixed(2)}`, 190, y + 10, { align: 'right' });
 
             doc.save(`recibo_pedido_${pedido.id}.pdf`);
-            mostrarMensagem('Recibo em PDF gerado com sucesso.', 'sucesso');
+            mostrarMensagem('Recibo em PDF gerado!', 'sucesso');
         } catch (err) {
-            tratarErro(err, 'Erro ao gerar o recibo em PDF');
+            tratarErro(err, 'Erro ao gerar PDF');
         }
     });
 }
 
 // ============================================================
-// RELATÓRIOS DE BI (consulta a API)
+// RELATÓRIOS BI
 // ============================================================
 async function atualizarRelatoriosBI(usarCache = false) {
     const filtro = $('filtro-mes');
     if (!filtro) return;
 
     const mesSelecionado = filtro.value;
-    const meuToken = ++tokenRelatorioBI;   // descarta respostas antigas se o filtro mudar rápido
+    const meuToken = ++tokenRelatorioBI;
 
     try {
         let pedidos, clientes, produtos;
@@ -1388,10 +1255,7 @@ async function atualizarRelatoriosBI(usarCache = false) {
         processarClientesFieis(pedidosFiltrados, clientes);
     } catch (err) {
         if (meuToken !== tokenRelatorioBI) return;
-        tratarErro(err, 'Não foi possível carregar os relatórios de BI');
-        definirHTML('lista-faturamento-mes', linhaMensagem(3, 'Não foi possível carregar este relatório.', 'estado-erro'));
-        definirHTML('lista-produtos-bi', linhaMensagem(3, 'Não foi possível carregar este relatório.', 'estado-erro'));
-        definirHTML('lista-clientes-bi', linhaMensagem(2, 'Não foi possível carregar este relatório.', 'estado-erro'));
+        tratarErro(err, 'Erro ao carregar relatórios de BI');
     }
 }
 
@@ -1427,8 +1291,7 @@ function processarFaturamentoLucroMensal(pedidos, produtos) {
         const dados = mesesMap[anoMes];
         const lucro = dados.faturamento - dados.custoTotal;
         const [ano, mes] = anoMes.split('-');
-        const nomeMes = new Date(Number(ano), Number(mes) - 1)
-            .toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+        const nomeMes = new Date(Number(ano), Number(mes) - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
         const nomeMesFormatado = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
         return `<tr>
             <td>${esc(nomeMesFormatado)}</td>
@@ -1450,7 +1313,7 @@ function processarProdutosMaisVendidos(pedidos, produtos) {
             const prod = mapaProdutos.get(item.produto_id);
             const chave = item.produto_id ?? 'removido';
             if (!produtosMap.has(chave)) {
-                produtosMap.set(chave, { nome: prod?.nome ?? 'Produto Removido', quantidade: 0, totalReais: 0 });
+                produtosMap.set(chave, { nome: prod?.nome ?? 'Produto', quantidade: 0, totalReais: 0 });
             }
             const registro = produtosMap.get(chave);
             registro.quantidade += item.quantidade;
@@ -1481,7 +1344,7 @@ function processarClientesFieis(pedidos, clientes) {
     pedidos.forEach((pedido) => {
         const chave = pedido.cliente_id ?? 'removido';
         if (!clientesMap.has(chave)) {
-            clientesMap.set(chave, { nome: mapaClientes.get(pedido.cliente_id)?.nome ?? 'Cliente Removido', totalPedidos: 0 });
+            clientesMap.set(chave, { nome: mapaClientes.get(pedido.cliente_id)?.nome ?? 'Cliente', totalPedidos: 0 });
         }
         clientesMap.get(chave).totalPedidos += 1;
     });
