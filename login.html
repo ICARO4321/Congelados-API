@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Congelados e Cia</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; background-color: #f4f4f9; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; margin: 0; 
+        }
+        .login-box { 
+            background: #fff; padding: 30px; border-radius: 8px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 300px; text-align: center; 
+        }
+        .login-box h2 { margin-top: 0; color: #333; }
+        input { 
+            width: 100%; padding: 10px; margin: 10px 0; 
+            border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; 
+        }
+        button { 
+            width: 100%; padding: 10px; background: #ea580c; 
+            color: white; border: none; border-radius: 4px; 
+            cursor: pointer; font-size: 16px; font-weight: bold;
+        }
+        button:hover { background: #c2410c; }
+        .erro { color: red; font-size: 14px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2>Congelados & Cia</h2>
+        <form id="form-login">
+            <input type="text" id="username" placeholder="Usuário" required>
+            <input type="password" id="password" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+            <p id="msg-erro" class="erro">Usuário ou senha incorretos!</p>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('https://congelados-api.onrender.com/login', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('userRole', data.role);
+                    window.location.href = 'index.html'; 
+                } else {
+                    document.getElementById('msg-erro').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao tentar conectar com a API.');
+            }
+        });
+    </script>
+</body>
+</html>
