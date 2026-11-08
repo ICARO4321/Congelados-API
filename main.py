@@ -59,6 +59,12 @@ class ItemPedido(Base):
 Base.metadata.create_all(bind=engine)
 
 # --- SCHEMAS ---
+
+# Novo Schema para o Login
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 class ProdutoCreate(BaseModel):
     nome: str
     preco: float
@@ -91,14 +97,12 @@ class PedidoCreate(BaseModel):
     cliente_id: int
     itens: List[ItemPedidoCreate]
 
-# ====== A CORREÇÃO FOI FEITA AQUI ======
 class ItemPedidoResponse(BaseModel):
     produto_id: int
     quantidade: int
-    preco_venda: Optional[float] = None # <- Adicionado Optional e = None
+    preco_venda: Optional[float] = None
     class Config:
         from_attributes = True
-# ========================================
 
 class PedidoResponse(BaseModel):
     id: int
@@ -131,6 +135,22 @@ def get_db():
 def raiz():
     return {"status": "API rodando perfeitamente!"}
 
+# --- ROTA DE LOGIN ---
+@app.post("/login")
+def login(credentials: LoginRequest):
+    # Valida login do Administrador
+    if credentials.username == "admin" and credentials.password == "admin":
+        return {"message": "Login bem-sucedido", "role": "admin"}
+    
+    # Valida login do Usuário Comum
+    elif credentials.username == "usuario" and credentials.password == "usuario":
+        return {"message": "Login bem-sucedido", "role": "usuario"}
+    
+    # Se errar, retorna erro 401 (Não Autorizado)
+    else:
+        raise HTTPException(status_code=401, detail="Usuário ou senha incorretos")
+
+# --- PRODUTOS ---
 @app.get("/produtos/", response_model=List[ProdutoResponse])
 def listar_produtos(db: Session = Depends(get_db)):
     try:
@@ -154,6 +174,7 @@ def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Produto excluído com sucesso"}
 
+# --- CLIENTES ---
 @app.get("/clientes/", response_model=List[ClienteResponse])
 def listar_clientes(db: Session = Depends(get_db)):
     try:
@@ -198,6 +219,7 @@ def excluir_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Cliente excluído"}
 
+# --- PEDIDOS ---
 @app.get("/pedidos/", response_model=List[PedidoResponse])
 def listar_pedidos(db: Session = Depends(get_db)):
     try:
@@ -234,6 +256,7 @@ def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Venda excluída com sucesso"}
 
+# --- RELATÓRIOS ---
 @app.get("/relatorios/produtos-mais-vendidos")
 def produtos_mais_vendidos(db: Session = Depends(get_db)):
     try:

@@ -7,7 +7,21 @@
     <!-- Importando Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Adicionar dentro do <head> do index.html -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script>
+        // PROTEÇÃO DE ROTA - Se não tiver token de acesso, chuta de volta pro login
+        if (!localStorage.getItem('userRole')) {
+            window.location.href = 'login.html';
+        }
+
+        // Função para sair do sistema
+        function logout() {
+            localStorage.removeItem('userRole');
+            window.location.href = 'login.html';
+        }
+    </script>
+
     <style>
         :root {
             --primary: #ea580c;
@@ -57,9 +71,13 @@
         .logo-img { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 6px; }
         .sidebar-header h2 { font-size: 0.9rem; margin: 0; color: #f8fafc; }
 
-        .sidebar-menu { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column;}
         .sidebar-menu li { padding: 15px 20px; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.2s, color 0.2s; }
         .sidebar-menu li:hover, .sidebar-menu li.active { background-color: #1e293b; color: #fff; border-left: 4px solid var(--primary); }
+
+        /* Estilo específico para o botão de Sair no menu */
+        .li-sair { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); color: #ef4444 !important; font-weight: bold !important; }
+        .li-sair:hover { background-color: rgba(239, 68, 68, 0.1) !important; color: #f87171 !important; border-left: 4px solid #ef4444 !important; }
 
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1050; backdrop-filter: blur(2px); opacity: 0; transition: opacity 0.3s ease; }
         .sidebar-overlay.active { display: block; opacity: 1; }
@@ -207,8 +225,12 @@
             <li onclick="mudarPagina('clientes')" id="menu-clientes">👥 Clientes</li>
             <li onclick="mudarPagina('pedidos')" id="menu-pedidos">🛒 Registrar Pedido</li>
             <li onclick="mudarPagina('historico')" id="menu-historico">🧾 Histórico de Vendas</li>
-            <li onclick="mudarPagina('financas')" id="menu-financas">💰 Finanças & Lucro</li>
-            <li onclick="mudarPagina('relatorios')" id="menu-relatorios">📈 Relatórios BI</li>
+            <!-- Os dois menus abaixo só serão exibidos para admin -->
+            <li onclick="mudarPagina('financas')" id="menu-financas" class="menu-admin-only">💰 Finanças & Lucro</li>
+            <li onclick="mudarPagina('relatorios')" id="menu-relatorios" class="menu-admin-only">📈 Relatórios BI</li>
+            
+            <!-- Botão de Sair adicionado AQUI, no final do menu -->
+            <li onclick="logout()" class="li-sair">🚪 Sair do Sistema</li>
         </ul>
     </aside>
 
@@ -377,7 +399,7 @@
         </div>
 
         <!-- TELA 6: FINANÇAS & LUCRO -->
-        <div id="page-financas" class="page">
+        <div id="page-financas" class="page menu-admin-only">
             <div class="card">
                 <h2 class="section-title">Calculadora de Custo, Preço e Lucratividade</h2>
                 <div class="table-responsive">
@@ -390,8 +412,7 @@
         </div>
 
         <!-- TELA 7: RELATÓRIOS BI -->
-
-            <!-- RELATÓRIOS BI ADICIONAIS -->
+        <div id="page-relatorios" class="page menu-admin-only">
             <div class="card">
                 <h3>Relatórios de BI & Desempenho</h3>
 
@@ -462,9 +483,6 @@
                 </div>
             </div>
 
-
-        <div id="page-relatorios" class="page">
-            
             <div class="charts-row">
                 <div class="card" style="margin-bottom:0;">
                     <h2 class="section-title">📈 Faturamento Mensal</h2>
@@ -546,7 +564,7 @@
             </div>
         </div>
     </div>
-<script>
+    <script>
         const API_URL = "https://congelados-api.onrender.com";
         let chartVendasInstance = null;
         let chartEstoqueInstance = null;
@@ -558,6 +576,16 @@
         let pedidosGlobais = [];
         let custosProdutos = JSON.parse(localStorage.getItem('congelados_custos') || '{}');
         let dadosPorMes = {};
+
+        // LÓGICA DE PERMISSÃO DE ACESSO (Ocultar menus se for "usuario")
+        document.addEventListener('DOMContentLoaded', () => {
+            const role = localStorage.getItem('userRole');
+            if (role !== 'admin') {
+                document.querySelectorAll('.menu-admin-only').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+        });
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
@@ -958,7 +986,6 @@
             document.getElementById('clienteTotalPedidos').innerText = pedidosCliente.length;
         }
 
-
         // HISTÓRICO DE VENDAS E RECIBO
         function carregarHistoricoVendas() {
             const tbody = document.getElementById('lista-historico-vendas');
@@ -1073,7 +1100,6 @@
                 window.addEventListener('afterprint', esconderRecibo);
             }, 100);
         }
-
 
         // RELATÓRIOS BI ADICIONAIS
         async function atualizarRelatoriosBI() {
@@ -1366,6 +1392,5 @@
             }
         }
     </script>
-    
 </body>
 </html>
