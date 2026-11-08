@@ -1,16 +1,13 @@
-from sqlalchemy import text
 import os
-import traceback
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Text, func
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Text, func, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
 from datetime import datetime
 
-# Configuração robusta do banco de dados
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./congelados.db")
 
 if "sqlite" in DATABASE_URL:
@@ -55,10 +52,27 @@ class ItemPedido(Base):
     pedido_id = Column(Integer, ForeignKey("pedidos.id"), nullable=False)
     produto_id = Column(Integer, ForeignKey("produtos.id"), nullable=False)
     quantidade = Column(Integer, nullable=False)
-    preco_venda = Column(Numeric(10, 2), nullable=False)
+    preco_venda = Column(Numeric(10, 2), nullable=False, default=0)
     produto = relationship("Produto")
 
+# Cria as tabelas se não existirem
 Base.metadata.create_all(bind=engine)
+
+# =========================================================
+# CORREÇÃO AUTOMÁTICA DO BANCO DE DADOS (Roda ao ligar)
+# =========================================================
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE itens_pedido ADD COLUMN preco_venda NUMERIC(10, 2) DEFAULT 0;"))
+except Exception:
+    pass # Se a coluna já existir, ele simplesmente ignora e segue a vida
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE pedidos ADD COLUMN status VARCHAR(45) DEFAULT 'Concluído';"))
+except Exception:
+    pass
+
 
 # --- SCHEMAS ---
 class LoginRequest(BaseModel):
@@ -134,7 +148,7 @@ def get_db():
 
 @app.get("/")
 def raiz():
-    return {"status": "API rodando perfeitamente!"}
+    return {"status": "API rodando e Banco Corrigido!"}
 
 # --- ROTAS ---
 @app.post("/login")
@@ -238,14 +252,10 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(novo_pedido)
         return {"mensagem": "Pedido realizado!", "pedido": novo_pedido}
-    except HTTPException as he:
-        db.rollback()
-        raise he
     except Exception as e:
         db.rollback()
-        erro_str = traceback.format_exc()
-        print(f"ERRO FATAL AO CRIAR PEDIDO:\n{erro_str}")
-        raise HTTPException(status_code=500, detail="Erro interno no banco de dados. Verifique os logs do Render.")
+        # Se der erro, ele devolve o erro real na tela para sabermos o que é!
+        raise HTTPException(status_code=400, detail=f"ERRO DO BANCO: {str(e)}")
 
 @app.delete("/pedidos/{pedido_id}")
 def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
@@ -270,25 +280,3 @@ def clientes_fieis(db: Session = Depends(get_db)):
         return [{"cliente": r.nome, "total_pedidos": int(r.total_pedidos or 0)} for r in resultados]
     except:
         return []
-    from sqlalchemy import text
-
-@app.get("/corrigir-banco")
-def corrigir_banco(db: Session = Depends(get_db)):
-    try:
-        # Tenta forçar a criação da coluna preco_venda na tabela que já existe
-        db.execute(text("ALTER TABLE itens_pedido ADD COLUMN preco_venda NUMERIC(10, 2) DEFAULT 0;"))
-        db.commit()
-        return {"mensagem": "Banco de dados corrigido! Coluna preco_venda adicionada com sucesso. Pode fazer suas vendas!"}
-    except Exception as e:
-        db.rollback()
-        return {"mensagem": "A coluna já existia ou ocorreu outro erro.", "detalhes": str(e)}
-
-@app.get("/reset-pedidos")
-def reset_pedidos():
-    try:
-        ItemPedido.__table__.drop(engine, checkfirst=True)
-        Pedido.__table__.drop(engine, checkfirst=True)
-        Base.metadata.create_all(bind=engine)
-        return {"mensagem": "Tabelas de pedidos resetadas e corrigidas com sucesso!"}
-    except Exception as e:
-        return {"erro": str(e)}
