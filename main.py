@@ -92,6 +92,7 @@ class ClienteResponse(ClienteCreate):
 class ItemPedidoCreate(BaseModel):
     produto_id: int
     quantidade: int
+    preco_venda: Optional[float] = None  # Permitindo que o front-end envie o preço
 
 class PedidoCreate(BaseModel):
     cliente_id: int
@@ -116,10 +117,11 @@ class PedidoResponse(BaseModel):
 # --- APP ---
 app = FastAPI(title="Congelados e Cia API", version="3.0")
 
+# --- CORREÇÃO DO CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,  # Deve ser False quando usar origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -240,8 +242,18 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
         produto = db.query(Produto).filter(Produto.id == item.produto_id).first()
         if not produto: raise HTTPException(status_code=404, detail="Produto não encontrado")
         if produto.estoque < item.quantidade: raise HTTPException(status_code=400, detail="Estoque insuficiente")
+        
         produto.estoque -= item.quantidade
-        novo_item = ItemPedido(pedido_id=novo_pedido.id, produto_id=produto.id, quantidade=item.quantidade, preco_venda=produto.preco)
+        
+        # Usa o preço enviado pelo front-end ou o preço padrão do produto
+        preco_final = item.preco_venda if item.preco_venda is not None else produto.preco
+        
+        novo_item = ItemPedido(
+            pedido_id=novo_pedido.id, 
+            produto_id=produto.id, 
+            quantidade=item.quantidade, 
+            preco_venda=preco_final
+        )
         db.add(novo_item)
 
     db.commit()
