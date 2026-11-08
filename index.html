@@ -6,7 +6,6 @@
     <title>Congelados e Cia - Gestão & BI</title>
     <!-- Importando Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Adicionar dentro do <head> do index.html -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <script>
@@ -75,7 +74,6 @@
         .sidebar-menu li { padding: 15px 20px; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.2s, color 0.2s; }
         .sidebar-menu li:hover, .sidebar-menu li.active { background-color: #1e293b; color: #fff; border-left: 4px solid var(--primary); }
 
-        /* Estilo específico para o botão de Sair no menu */
         .li-sair { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); color: #ef4444 !important; font-weight: bold !important; }
         .li-sair:hover { background-color: rgba(239, 68, 68, 0.1) !important; color: #f87171 !important; border-left: 4px solid #ef4444 !important; }
 
@@ -154,10 +152,12 @@
                 position: absolute;
                 left: 0;
                 top: 0;
-                width: 100%;
+                width: 80mm;
                 display: block !important;
                 font-family: monospace;
                 color: black;
+                font-size: 12px;
+                padding: 5px;
             }
         }
 
@@ -171,42 +171,17 @@
             font-size: 0.75rem;
         }
 
-        .btn-imprimir:hover {
-            opacity: 0.9;
-        }
+        .btn-imprimir:hover { opacity: 0.9; }
 
-        .bi-table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        .bi-table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .bi-table-wrapper .table { min-width: 620px; }
 
-        .bi-table-wrapper .table {
-            min-width: 620px;
-        }
-
-        .filtro-bi-container {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin: 15px 0;
-        }
-
-        .filtro-bi-container select {
-            max-width: 260px;
-        }
+        .filtro-bi-container { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 15px 0; }
+        .filtro-bi-container select { max-width: 260px; }
 
         @media (max-width: 600px) {
-            .filtro-bi-container {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .filtro-bi-container select {
-                width: 100%;
-                max-width: none;
-            }
+            .filtro-bi-container { align-items: stretch; flex-direction: column; }
+            .filtro-bi-container select { width: 100%; max-width: none; }
         }
     </style>
 </head>
@@ -225,11 +200,8 @@
             <li onclick="mudarPagina('clientes')" id="menu-clientes">👥 Clientes</li>
             <li onclick="mudarPagina('pedidos')" id="menu-pedidos">🛒 Registrar Pedido</li>
             <li onclick="mudarPagina('historico')" id="menu-historico">🧾 Histórico de Vendas</li>
-            <!-- Os dois menus abaixo só serão exibidos para admin -->
             <li onclick="mudarPagina('financas')" id="menu-financas" class="menu-admin-only">💰 Finanças & Lucro</li>
             <li onclick="mudarPagina('relatorios')" id="menu-relatorios" class="menu-admin-only">📈 Relatórios BI</li>
-            
-            <!-- Botão de Sair adicionado AQUI, no final do menu -->
             <li onclick="logout()" class="li-sair">🚪 Sair do Sistema</li>
         </ul>
     </aside>
@@ -337,7 +309,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- TELA 5: HISTÓRICO DE VENDAS -->
         <div id="page-historico" class="page">
@@ -564,6 +535,7 @@
             </div>
         </div>
     </div>
+
     <script>
         const API_URL = "https://congelados-api.onrender.com";
         let chartVendasInstance = null;
@@ -607,8 +579,8 @@
 
             if(paginaId === 'dashboard') atualizarGraficosDashboard();
             if(paginaId === 'historico') carregarHistoricoVendas();
-            if(paginaId === 'relatorios') atualizarRelatoriosBI();
             if(paginaId === 'relatorios') {
+                atualizarRelatoriosBI();
                 processarRelatoriosMensais();
                 atualizarGraficoComparativo();
                 popularSelectClientesHistorico();
@@ -783,12 +755,13 @@
                 let lucroPed = 0;
                 
                 ped.itens.forEach(item => {
-                    const fatItem = item.quantidade * item.preco_venda;
+                    const precoVendaItem = parseFloat(item.preco_venda) || 0;
+                    const fatItem = item.quantidade * precoVendaItem;
                     faturamentoPed += fatItem;
                     
                     const prod = produtosGlobais.find(p => p.id === item.produto_id);
                     let custoUnit = prod ? (custosProdutos[prod.id] !== undefined ? custosProdutos[prod.id] : (prod.preco * 0.4)) : 0;
-                    lucroPed += (item.preco_venda - custoUnit) * item.quantidade;
+                    lucroPed += (precoVendaItem - custoUnit) * item.quantidade;
                 });
                 
                 dadosPorMes[mesAno].totalFaturado += faturamentoPed;
@@ -908,12 +881,13 @@
                     pedido.itens.forEach(item => {
                         const prod = produtosGlobais.find(p => p.id === item.produto_id);
                         const nomeProd = prod ? prod.nome : `Produto ID ${item.produto_id}`;
-                        const subtotal = item.quantidade * item.preco_venda;
+                        const precoVenda = parseFloat(item.preco_venda) || (prod ? parseFloat(prod.preco) : 0);
+                        const subtotal = item.quantidade * precoVenda;
                         totalGeral += subtotal;
 
                         doc.text(String(item.quantidade), 14, y);
                         doc.text(String(nomeProd), 30, y);
-                        doc.text(`R$ ${item.preco_venda.toFixed(2)}`, 140, y, { align: "right" });
+                        doc.text(`R$ ${precoVenda.toFixed(2)}`, 140, y, { align: "right" });
                         doc.text(`R$ ${subtotal.toFixed(2)}`, 190, y, { align: "right" });
                         y += 8;
                     });
@@ -959,7 +933,8 @@
                 ped.itens.forEach(item => {
                     const prod = produtosGlobais.find(p => p.id === item.produto_id);
                     const nomeProd = prod ? prod.nome : `Produto ID ${item.produto_id}`;
-                    const subtotal = item.quantidade * item.preco_venda;
+                    const precoVenda = parseFloat(item.preco_venda) || (prod ? parseFloat(prod.preco) : 0);
+                    const subtotal = item.quantidade * precoVenda;
                     totalPedido += subtotal;
                     itensDesc.push(`${item.quantidade}x ${nomeProd}`);
                 });
@@ -986,7 +961,6 @@
             document.getElementById('clienteTotalPedidos').innerText = pedidosCliente.length;
         }
 
-        // HISTÓRICO DE VENDAS E RECIBO
         function carregarHistoricoVendas() {
             const tbody = document.getElementById('lista-historico-vendas');
             if (!tbody) return;
@@ -1003,7 +977,6 @@
                 return;
             }
 
-            // Mostra as vendas mais recentes primeiro.
             const pedidosOrdenados = [...pedidosGlobais].sort((a, b) => {
                 const dataA = new Date(a.data_criacao || 0).getTime();
                 const dataB = new Date(b.data_criacao || 0).getTime();
@@ -1045,7 +1018,6 @@
 
             const cliente = clientesGlobais.find(c => c.id == pedido.cliente_id);
 
-            // Dados do cliente
             document.getElementById('recibo-dados-cliente').innerHTML = `
                 <strong>Cliente:</strong> ${cliente ? cliente.nome : 'N/A'}<br>
                 <strong>Telefone:</strong> ${cliente && cliente.telefone ? cliente.telefone : 'N/A'}<br>
@@ -1055,7 +1027,6 @@
                     : 'N/A'}
             `;
 
-            // Itens do pedido
             const tbodyItens = document.getElementById('recibo-itens');
             tbodyItens.innerHTML = '';
 
@@ -1065,7 +1036,7 @@
                 const produto = produtosGlobais.find(p => p.id == item.produto_id);
                 const nomeProduto = produto ? produto.nome : 'Produto Excluído';
 
-                const precoVenda = parseFloat(item.preco_venda) || 0;
+                const precoVenda = parseFloat(item.preco_venda) || (produto ? parseFloat(produto.preco) : 0);
                 const quantidade = parseInt(item.quantidade) || 0;
                 const subtotal = quantidade * precoVenda;
 
@@ -1087,11 +1058,9 @@
             const reciboDiv = document.getElementById('recibo-venda');
             reciboDiv.style.display = 'block';
 
-            // Aguarda o navegador atualizar o recibo antes de abrir a impressão.
             setTimeout(() => {
                 window.print();
 
-                // O afterprint é usado para esconder novamente o recibo.
                 const esconderRecibo = () => {
                     reciboDiv.style.display = 'none';
                     window.removeEventListener('afterprint', esconderRecibo);
@@ -1101,7 +1070,6 @@
             }, 100);
         }
 
-        // RELATÓRIOS BI ADICIONAIS
         async function atualizarRelatoriosBI() {
             const filtro = document.getElementById('filtro-mes');
             if (!filtro) return;
@@ -1121,10 +1089,8 @@
 
                 const pedidosFiltrados = pedidos.filter(pedido => {
                     if (!mesSelecionado) return true;
-
                     const dataPedido = new Date(pedido.data_criacao);
                     const mesPedido = String(dataPedido.getMonth() + 1).padStart(2, '0');
-
                     return mesPedido === mesSelecionado;
                 });
 
@@ -1155,7 +1121,7 @@
 
                 (pedido.itens || []).forEach(item => {
                     const prod = produtos.find(p => p.id == item.produto_id);
-                    const precoVenda = parseFloat(item.preco_venda) || 0;
+                    const precoVenda = parseFloat(item.preco_venda) || (prod ? parseFloat(prod.preco) : 0);
                     const precoCusto = prod && parseFloat(prod.preco_custo)
                         ? parseFloat(prod.preco_custo)
                         : precoVenda * 0.5;
@@ -1213,7 +1179,8 @@
                         };
                     }
 
-                    const precoVenda = parseFloat(item.preco_venda) || 0;
+                    const prod = produtos.find(p => p.id == item.produto_id);
+                    const precoVenda = parseFloat(item.preco_venda) || (prod ? parseFloat(prod.preco) : 0);
                     const quantidade = parseInt(item.quantidade) || 0;
 
                     produtosMap[item.produto_id].quantidade += quantidade;
