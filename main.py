@@ -1,4 +1,5 @@
 import os
+import traceback
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,7 +9,7 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
 from datetime import datetime
 
-# Configuração robusta do banco de dados (SQLite local vs PostgreSQL no Render)
+# Configuração robusta do banco de dados
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./congelados.db")
 
 if "sqlite" in DATABASE_URL:
@@ -59,8 +60,6 @@ class ItemPedido(Base):
 Base.metadata.create_all(bind=engine)
 
 # --- SCHEMAS ---
-
-# Novo Schema para o Login
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -92,7 +91,7 @@ class ClienteResponse(ClienteCreate):
 class ItemPedidoCreate(BaseModel):
     produto_id: int
     quantidade: int
-    preco_venda: Optional[float] = None  # Permitindo que o front-end envie o preço
+    preco_venda: Optional[float] = None
 
 class PedidoCreate(BaseModel):
     cliente_id: int
@@ -114,14 +113,13 @@ class PedidoResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- APP ---
+# --- APP E CORS ---
 app = FastAPI(title="Congelados e Cia API", version="3.0")
 
-# --- CORREÇÃO DO CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,  # Deve ser False quando usar origins=["*"]
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -137,22 +135,16 @@ def get_db():
 def raiz():
     return {"status": "API rodando perfeitamente!"}
 
-# --- ROTA DE LOGIN ---
+# --- ROTAS ---
 @app.post("/login")
 def login(credentials: LoginRequest):
-    # Valida login do Administrador
     if credentials.username == "admin" and credentials.password == "admin":
         return {"message": "Login bem-sucedido", "role": "admin"}
-    
-    # Valida login do Usuário Comum
     elif credentials.username == "usuario" and credentials.password == "usuario":
         return {"message": "Login bem-sucedido", "role": "usuario"}
-    
-    # Se errar, retorna erro 401 (Não Autorizado)
     else:
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos")
 
-# --- PRODUTOS ---
 @app.get("/produtos/", response_model=List[ProdutoResponse])
 def listar_produtos(db: Session = Depends(get_db)):
     try:
@@ -176,7 +168,6 @@ def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Produto excluído com sucesso"}
 
-# --- CLIENTES ---
 @app.get("/clientes/", response_model=List[ClienteResponse])
 def listar_clientes(db: Session = Depends(get_db)):
     try:
@@ -186,14 +177,7 @@ def listar_clientes(db: Session = Depends(get_db)):
 
 @app.post("/clientes/", status_code=status.HTTP_201_CREATED)
 def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
-    novo_cliente = Cliente(
-        nome=cliente.nome,
-        telefone=cliente.telefone,
-        cnpj=cliente.cnpj,
-        endereco=cliente.endereco,
-        cidade=cliente.cidade,
-        observacao=cliente.observacao
-    )
+    novo_cliente = Cliente(**cliente.dict())
     db.add(novo_cliente)
     db.commit()
     db.refresh(novo_cliente)
@@ -203,12 +187,8 @@ def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
 def atualizar_cliente(cliente_id: int, cliente: ClienteCreate, db: Session = Depends(get_db)):
     cli_db = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cli_db: raise HTTPException(status_code=404, detail="Cliente não encontrado")
-    cli_db.nome = cliente.nome
-    cli_db.telefone = cliente.telefone
-    cli_db.cnpj = cliente.cnpj
-    cli_db.endereco = cliente.endereco
-    cli_db.cidade = cliente.cidade
-    cli_db.observacao = cliente.observacao
+    for key, value in cliente.dict().items():
+        setattr(cli_db, key, value)
     db.commit()
     db.refresh(cli_db)
     return {"mensagem": "Cliente atualizado com sucesso!", "cliente": cli_db}
@@ -221,7 +201,6 @@ def excluir_cliente(cliente_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Cliente excluído"}
 
-# --- PEDIDOS ---
 @app.get("/pedidos/", response_model=List[PedidoResponse])
 def listar_pedidos(db: Session = Depends(get_db)):
     try:
@@ -231,44 +210,50 @@ def listar_pedidos(db: Session = Depends(get_db)):
 
 @app.post("/pedidos/", status_code=status.HTTP_201_CREATED)
 def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).filter(Cliente.id == pedido.cliente_id).first()
-    if not cliente: raise HTTPException(status_code=404, detail="Cliente não encontrado")
-    
-    novo_pedido = Pedido(cliente_id=pedido.cliente_id)
-    db.add(novo_pedido)
-    db.flush() 
+    try:
+        cliente = db.query(Cliente).filter(Cliente.id == pedido.cliente_id).first()
+        if not cliente: raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        
+        novo_pedido = Pedido(cliente_id=pedido.cliente_id)
+        db.add(novo_pedido)
+        db.flush() 
 
-    for item in pedido.itens:
-        produto = db.query(Produto).filter(Produto.id == item.produto_id).first()
-        if not produto: raise HTTPException(status_code=404, detail="Produto não encontrado")
-        if produto.estoque < item.quantidade: raise HTTPException(status_code=400, detail="Estoque insuficiente")
-        
-        produto.estoque -= item.quantidade
-        
-        # Usa o preço enviado pelo front-end ou o preço padrão do produto
-        preco_final = item.preco_venda if item.preco_venda is not None else produto.preco
-        
-        novo_item = ItemPedido(
-            pedido_id=novo_pedido.id, 
-            produto_id=produto.id, 
-            quantidade=item.quantidade, 
-            preco_venda=preco_final
-        )
-        db.add(novo_item)
+        for item in pedido.itens:
+            produto = db.query(Produto).filter(Produto.id == item.produto_id).first()
+            if not produto: raise HTTPException(status_code=404, detail="Produto não encontrado")
+            if produto.estoque < item.quantidade: raise HTTPException(status_code=400, detail="Estoque insuficiente")
+            
+            produto.estoque -= item.quantidade
+            preco_final = item.preco_venda if item.preco_venda is not None else produto.preco
+            
+            novo_item = ItemPedido(
+                pedido_id=novo_pedido.id, 
+                produto_id=produto.id, 
+                quantidade=item.quantidade, 
+                preco_venda=preco_final
+            )
+            db.add(novo_item)
 
-    db.commit()
-    db.refresh(novo_pedido)
-    return {"mensagem": "Pedido realizado!", "pedido": novo_pedido}
+        db.commit()
+        db.refresh(novo_pedido)
+        return {"mensagem": "Pedido realizado!", "pedido": novo_pedido}
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        erro_str = traceback.format_exc()
+        print(f"ERRO FATAL AO CRIAR PEDIDO:\n{erro_str}")
+        raise HTTPException(status_code=500, detail="Erro interno no banco de dados. Verifique os logs do Render.")
 
 @app.delete("/pedidos/{pedido_id}")
 def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
-    if not pedido: raise HTTPException(status_code=404, detail="Venda/Pedido não encontrado")
+    if not pedido: raise HTTPException(status_code=404, detail="Venda não encontrada")
     db.delete(pedido)
     db.commit()
     return {"mensagem": "Venda excluída com sucesso"}
 
-# --- RELATÓRIOS ---
 @app.get("/relatorios/produtos-mais-vendidos")
 def produtos_mais_vendidos(db: Session = Depends(get_db)):
     try:
