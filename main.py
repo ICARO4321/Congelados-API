@@ -1,3 +1,4 @@
+from sqlalchemy import text
 import os
 import traceback
 from fastapi import FastAPI, Depends, HTTPException, status
@@ -281,3 +282,13 @@ def corrigir_banco(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         return {"mensagem": "A coluna já existia ou ocorreu outro erro.", "detalhes": str(e)}
+
+@app.get("/reset-pedidos")
+def reset_pedidos():
+    try:
+        ItemPedido.__table__.drop(engine, checkfirst=True)
+        Pedido.__table__.drop(engine, checkfirst=True)
+        Base.metadata.create_all(bind=engine)
+        return {"mensagem": "Tabelas de pedidos resetadas e corrigidas com sucesso!"}
+    except Exception as e:
+        return {"erro": str(e)}
