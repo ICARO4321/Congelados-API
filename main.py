@@ -269,3 +269,15 @@ def clientes_fieis(db: Session = Depends(get_db)):
         return [{"cliente": r.nome, "total_pedidos": int(r.total_pedidos or 0)} for r in resultados]
     except:
         return []
+    from sqlalchemy import text
+
+@app.get("/corrigir-banco")
+def corrigir_banco(db: Session = Depends(get_db)):
+    try:
+        # Tenta forçar a criação da coluna preco_venda na tabela que já existe
+        db.execute(text("ALTER TABLE itens_pedido ADD COLUMN preco_venda NUMERIC(10, 2) DEFAULT 0;"))
+        db.commit()
+        return {"mensagem": "Banco de dados corrigido! Coluna preco_venda adicionada com sucesso. Pode fazer suas vendas!"}
+    except Exception as e:
+        db.rollback()
+        return {"mensagem": "A coluna já existia ou ocorreu outro erro.", "detalhes": str(e)}
