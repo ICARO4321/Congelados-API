@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Text, func
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Text, func, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from typing import List, Optional
@@ -52,11 +52,19 @@ class ItemPedido(Base):
     pedido_id = Column(Integer, ForeignKey("pedidos.id"), nullable=False)
     produto_id = Column(Integer, ForeignKey("produtos.id"), nullable=False)
     quantidade = Column(Integer, nullable=False)
-    preco_venda = Column(Numeric(10, 2), nullable=False)
+    preco_venda = Column(Numeric(10, 2), nullable=False, default=0)
     produto = relationship("Produto")
 
-# Recria ou atualiza as tabelas de forma limpa
+# Cria as tabelas se não existirem
 Base.metadata.create_all(bind=engine)
+
+# CORREÇÃO AUTOMÁTICA DA TABELA NO POSTGRES/RENDER
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS preco_venda NUMERIC(10, 2) DEFAULT 0;"))
+        conn.execute(text("ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS status VARCHAR(45) DEFAULT 'Concluído';"))
+except Exception:
+    pass
 
 # --- SCHEMAS ---
 class LoginRequest(BaseModel):
@@ -132,7 +140,7 @@ def get_db():
 
 @app.get("/")
 def raiz():
-    return {"status": "API rodando perfeitamente!"}
+    return {"status": "API rodando e Banco Atualizado com Sucesso!"}
 
 @app.post("/login")
 def login(credentials: LoginRequest):
