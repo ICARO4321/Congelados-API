@@ -55,7 +55,7 @@ class ItemPedido(Base):
     preco_venda = Column(Numeric(10, 2), nullable=False)
     produto = relationship("Produto")
 
-# Garante a criação limpa ou atualização das tabelas
+# Recria ou atualiza as tabelas de forma limpa
 Base.metadata.create_all(bind=engine)
 
 # --- SCHEMAS ---
@@ -132,7 +132,7 @@ def get_db():
 
 @app.get("/")
 def raiz():
-    return {"status": "API parametrizada e rodando perfeitamente!"}
+    return {"status": "API rodando perfeitamente!"}
 
 @app.post("/login")
 def login(credentials: LoginRequest):
