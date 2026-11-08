@@ -59,20 +59,19 @@ class ItemPedido(Base):
 Base.metadata.create_all(bind=engine)
 
 # =========================================================
-# CORREÇÃO AUTOMÁTICA DO BANCO DE DADOS (Roda ao ligar)
+# AUTO-REPARADOR DO BANCO DE DADOS
 # =========================================================
+# Verifica se a coluna preco_venda existe. Se falhar, recria as tabelas de vendas do zero.
 try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE itens_pedido ADD COLUMN preco_venda NUMERIC(10, 2) DEFAULT 0;"))
+    with engine.connect() as conn:
+        conn.execute(text("SELECT preco_venda FROM itens_pedido LIMIT 1"))
 except Exception:
-    pass # Se a coluna já existir, ele simplesmente ignora e segue a vida
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE pedidos ADD COLUMN status VARCHAR(45) DEFAULT 'Concluído';"))
-except Exception:
-    pass
-
+    try:
+        ItemPedido.__table__.drop(engine, checkfirst=True)
+        Pedido.__table__.drop(engine, checkfirst=True)
+        Base.metadata.create_all(bind=engine)
+    except:
+        pass
 
 # --- SCHEMAS ---
 class LoginRequest(BaseModel):
@@ -148,7 +147,7 @@ def get_db():
 
 @app.get("/")
 def raiz():
-    return {"status": "API rodando e Banco Corrigido!"}
+    return {"status": "API a funcionar e Banco Auto-Reparado!"}
 
 # --- ROTAS ---
 @app.post("/login")
@@ -252,10 +251,12 @@ def criar_pedido(pedido: PedidoCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(novo_pedido)
         return {"mensagem": "Pedido realizado!", "pedido": novo_pedido}
+    except HTTPException as he:
+        db.rollback()
+        raise he
     except Exception as e:
         db.rollback()
-        # Se der erro, ele devolve o erro real na tela para sabermos o que é!
-        raise HTTPException(status_code=400, detail=f"ERRO DO BANCO: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"ERRO INTERNO: {str(e)}")
 
 @app.delete("/pedidos/{pedido_id}")
 def excluir_pedido(pedido_id: int, db: Session = Depends(get_db)):
