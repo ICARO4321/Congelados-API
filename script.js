@@ -1,4 +1,38 @@
 // ============================================================
+// AUTOSSUFICIÊNCIA (funciona mesmo com um index.html antigo)
+// ============================================================
+if (typeof obterRole !== 'function') {
+    globalThis.obterRole = function () {
+        try {
+            const role = localStorage.getItem('userRole');
+            if (typeof role !== 'string') return null;
+            const limpo = role.trim();
+            return /^[A-Za-z_-]{1,30}$/.test(limpo) ? limpo : null;
+        } catch (e) {
+            return null;
+        }
+    };
+}
+
+(function injetarEstilosDeFeedback() {
+    if (document.getElementById('estilos-feedback')) return;
+    const style = document.createElement('style');
+    style.id = 'estilos-feedback';
+    style.textContent = `
+        #toast-container { position: fixed; top: 12px; right: 12px; left: 12px; z-index: 3000; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+        .toast { pointer-events: auto; width: 100%; max-width: 420px; display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; color: #fff; font-size: 0.85rem; line-height: 1.35; cursor: pointer; border-left: 5px solid rgba(255,255,255,0.55); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+        .toast-sucesso { background: #16a34a; }
+        .toast-erro { background: #dc3545; }
+        .toast-aviso { background: #d97706; }
+        .toast-info { background: #0ea5e9; }
+        .estado-vazio { text-align: center; color: #64748b; padding: 14px; font-size: 0.85rem; }
+        .estado-erro { text-align: center; color: #dc3545; padding: 14px; font-size: 0.85rem; grid-column: 1 / -1; }
+        @media print { #toast-container { display: none !important; } }
+    `;
+    document.head.appendChild(style);
+})();
+
+// ============================================================
 // CONFIGURAÇÃO
 // ============================================================
 const API_URL = "https://congelados-api.onrender.com";
@@ -263,7 +297,8 @@ function normalizarItemPedido(item) {
     return {
         produto_id: Number.isFinite(produtoId) ? produtoId : null,
         quantidade: Math.max(0, Math.trunc(paraNumero(item.quantidade))),
-        preco_venda: paraNumero(item.preco_venda, null)   // null = "sem preço registrado"
+        // 0, vazio ou inválido = "sem preço registrado" -> usa o preço do produto (comportamento original)
+        preco_venda: (paraNumero(item.preco_venda, 0) > 0) ? paraNumero(item.preco_venda, 0) : null
     };
 }
 
@@ -658,6 +693,7 @@ async function criarPedido() {
             return mostrarMensagem('Informe uma quantidade válida (mínimo 1).', 'aviso');
         }
 
+        mostrarMensagem('Registrando venda...', 'info', 2500);
         try {
             await requisitar(
                 `${API_URL}/pedidos/`,
