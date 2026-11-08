@@ -681,55 +681,66 @@ function atualizarTotalPDV() {
 }
 
 async function criarPedido() {
-    return executarUmaVez('criarPedido', async () => {
-        const clienteId = parseInt($('pedidoCliente')?.value, 10);
-        const produtoId = parseInt($('pedidoProdutoId')?.value, 10);
-        const quantidade = parseInt($('pedidoQtd')?.value, 10);
+    // Pegando os valores diretamente do HTML
+    const clienteId = parseInt(document.getElementById('pedidoCliente').value, 10);
+    const produtoId = parseInt(document.getElementById('pedidoProdutoId').value, 10);
+    const quantidade = parseInt(document.getElementById('pedidoQtd').value, 10);
 
-        if (!Number.isFinite(clienteId) || !Number.isFinite(produtoId)) {
-            return mostrarMensagem('Selecione cliente, produto e quantidade.', 'aviso');
-        }
-        if (!Number.isFinite(quantidade) || quantidade < 1) {
-            return mostrarMensagem('Informe uma quantidade válida (mínimo 1).', 'aviso');
-        }
+    // Validação inicial com alerta visível na tela
+    if (!clienteId || !produtoId || isNaN(quantidade) || quantidade < 1) {
+        alert("⚠️ Por favor, selecione um cliente, um produto e a quantidade.");
+        return;
+    }
 
-        // Recupera o produto e o preço de venda para enviar ao back-end
-        const produto = produtosPorId.get(produtoId);
-        const precoVenda = produto ? produto.preco : 0;
+    // Busca o preço do produto de forma segura
+    let produto = null;
+    if (typeof produtosPorId !== 'undefined' && produtosPorId.has(produtoId)) {
+        produto = produtosPorId.get(produtoId);
+    } else if (typeof produtosGlobais !== 'undefined') {
+        produto = produtosGlobais.find(p => p.id === produtoId);
+    }
+    const precoVenda = produto ? parseFloat(produto.preco) : 0;
 
-        mostrarMensagem('Registrando venda...', 'info', 2500);
-        try {
-            await requisitar(
-                `${API_URL}/pedidos/`,
-                {
-                    method: 'POST',
-                    headers: CABECALHO_JSON,
-                    body: JSON.stringify({
-                        cliente_id: clienteId,
-                        itens: [
-                            {
-                                produto_id: produtoId,
-                                quantidade: quantidade,
-                                preco_venda: precoVenda // <- Isso é obrigatório para a API
-                            }
-                        ]
-                    })
-                },
-                { json: false }
-            );
-            mostrarMensagem('Pedido realizado!', 'sucesso');
-            definirValor('pedidoProdutoId', '');
-            definirValor('pdvProdutoSelecionadoNome', 'Nenhum selecionado');
-            definirValor('pedidoQtd', 1);
-            definirTexto('pdvTotalPreco', 'R$ 0,00');
-            document.querySelectorAll('.pdv-product-card').forEach((card) => card.classList.remove('selected'));
-            await carregarDados();
-        } catch (err) {
-            tratarErro(err, 'Erro ao realizar pedido');
+    try {
+        // Envia a requisição direto para a API
+        const response = await fetch(`${API_URL}/pedidos/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cliente_id: clienteId,
+                itens: [{
+                    produto_id: produtoId,
+                    quantidade: quantidade,
+                    preco_venda: precoVenda
+                }]
+            })
+        });
+
+        if (response.ok) {
+            alert("✅ Venda concluída com sucesso!");
+            
+            // Limpa os campos da tela do PDV
+            document.getElementById('pedidoProdutoId').value = '';
+            document.getElementById('pdvProdutoSelecionadoNome').value = 'Nenhum selecionado';
+            document.getElementById('pedidoQtd').value = '1';
+            document.getElementById('pdvTotalPreco').innerText = 'R$ 0,00';
+            
+            // Tira a bordinha laranja de seleção
+            document.querySelectorAll('.pdv-product-card').forEach(card => card.classList.remove('selected'));
+            
+            // Atualiza o sistema
+            if (typeof carregarDados === 'function') carregarDados();
+            
+        } else {
+            const erroMsg = await response.text();
+            console.error("Detalhes do erro:", erroMsg);
+            alert("❌ Erro ao realizar pedido. O servidor recusou a venda.");
         }
-    });
+    } catch (err) {
+        console.error("Erro de conexão:", err);
+        alert("❌ Erro de comunicação. Verifique sua internet ou se a API está online.");
+    }
 }
-
 // ============================================================
 // RENDERIZAÇÃO (arrays + join para performance)
 // ============================================================
